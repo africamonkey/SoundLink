@@ -27,6 +27,22 @@ bazel test --config=asan --test_output=errors //...
 
 - `TEST_FOLDER`: Test output directory (default: `/var/tmp/africamonkey`)
 
+## Component Overview
+
+The ThruAudioXfer project implements two main components:
+
+### Encoder
+- Encodes messages into audio signals
+- Outputs to WAV files
+- Plays encoded audio through speakers
+- Located in `src/encoder/` directory
+
+### Decoder  
+- Captures audio from microphone
+- Decodes messages from audio signals
+- Outputs decoded messages
+- Located in `src/decoder/` directory
+
 ## Code Style Guidelines
 
 ### File Organization
