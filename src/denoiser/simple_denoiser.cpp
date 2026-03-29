@@ -35,7 +35,11 @@ void SimpleDenoiser::Denoise(const std::function<bool(double*)>& get_next_audio_
       noise_floor_ = EstimateNoiseFloor(amplitude_window_);
       set_next_audio_sample(next_sample);
     } else {
-      set_next_audio_sample(smoothed_sample);
+      if (std::abs(next_sample) > noise_floor_) {
+        set_next_audio_sample(next_sample);
+      } else {
+        set_next_audio_sample(smoothed_sample);
+      }
     }
     ++frame_count_;
   }
