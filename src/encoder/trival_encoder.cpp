@@ -60,8 +60,8 @@ void TrivalEncoder::Encode(const std::function<bool(char *)> &get_next_byte,
   }
 }
 
-void TrivalEncoder::Decode(const std::function<bool(double *)> &get_next_audio_sample,
-                           const std::function<void(char)> &set_next_byte) const {
+void TrivalEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sample,
+                           const std::function<void(char)>& set_next_byte) const {
   const int window_size = static_cast<int>(audio_sample_rate_ / encoder_rate_);
   SampleWindow sample_window(audio_sample_rate_, window_size);
   SampleWindow sample_window_half_size(audio_sample_rate_, window_size / 2);

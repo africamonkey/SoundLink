@@ -50,12 +50,25 @@ The ThruAudioXfer project implements two main components:
 - Outputs to WAV files
 - Plays encoded audio through speakers
 - Located in `src/encoder/` directory
+- Contains both Encode and Decode functionality (merged decoder into encoder)
 
-### Decoder  
-- Captures audio from microphone
-- Decodes messages from audio signals
-- Outputs decoded messages
-- Located in `src/decoder/` directory
+### Audio Module
+- Cross-platform audio playback and capture using PortAudio
+- Located in `src/audio/` directory
+- `AudioPlayer`: Plays audio samples through speakers
+- `AudioCapturer`: Captures audio samples from microphone
+
+### Sender
+- High-level module for encoding and transmitting messages
+- Located in `src/sender/` directory
+
+### Receiver
+- High-level module for receiving and decoding messages
+- Located in `src/receiver/` directory
+
+### Protocol
+- Frame structure definitions for data transfer
+- Located in `src/protocol/` directory
 
 ## Code Style Guidelines
 
@@ -65,6 +78,7 @@ The ThruAudioXfer project implements two main components:
 - Copyright notice: `// Copyright (c) 2023. Kaiqi Wang - All Rights Reserved`
 - Test files: `*_test.cpp` or `*_test.cc` in same directory as implementation
 - Protocol buffer files: `*.proto` in `src/common/interface/proto/`
+- Third-party headers: `third_party/<library>/<header>.h`
 
 ### Naming Conventions
 
@@ -125,6 +139,7 @@ MUST_USE_RESULT bool ReadFromProtoInTextFormat(const std::string &text_file,
 
 - No external formatting tools configured (no clang-format, clang-tidy, pre-commit hooks)
 - Use existing code style as reference
+- Ensure files end with a newline character
 
 ### Testing Guidelines
 
@@ -156,6 +171,7 @@ TEST(ClassName, TestCaseDescription) {
 - **Google Test (gtest)**: Unit testing framework
 - **Google Logging (glog)**: Logging library (CHECK macros)
 - **Protocol Buffers**: Configuration/data serialization
+- **PortAudio**: Cross-platform audio library
 - **C++ filesystem**: File operations
 - **Bazel rules_cc, rules_proto**: Build rules
 
@@ -203,3 +219,9 @@ cc_test(
     ],
 )
 ```
+
+### Cross-Platform Considerations
+
+- Use `select()` with `@platforms//os:macos` and `@platforms//os:linux` for OS-specific settings
+- Third-party library paths differ between macOS (Homebrew) and Linux (system)
+- Ensure all files end with a newline character

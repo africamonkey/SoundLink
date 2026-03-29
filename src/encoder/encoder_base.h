@@ -21,8 +21,8 @@ class EncoderBase {
 
   // When getting an audio sample, we require a bool return value that indicates whether
   // the getting operation is successful. True means successful.
-  virtual void Decode(const std::function<bool(double*)> &get_next_audio_sample,
-                      const std::function<void(char)> &set_next_byte) const = 0;
+  virtual void Decode(const std::function<bool(double*)>& get_next_audio_sample,
+                      const std::function<void(char)>& set_next_byte) const = 0;
 
  protected:
   int audio_sample_rate_;
