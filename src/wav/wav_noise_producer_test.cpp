@@ -19,9 +19,9 @@ TEST(AudioNoiseTest, AddWhiteNoiseCustomFile) {
   wav_params.set_num_channels(1);
   wav_params.set_bit_depth(16);
 
-  const std::string input_filename = "src/wav/test_data/trival_encoder_sample.wav";
+  const std::string input_filename = "src/wav/test_data/simple_encoder_sample.wav";
   const std::string output_filename =
-      io::GenerateTestFolder() + "/trival_encoder_sample_noise_output.wav";
+      io::GenerateTestFolder() + "/simple_encoder_sample_noise_output.wav";
 
   AddWhiteNoise(input_filename, output_filename, 0.1);
   io::DeleteFileIfExists(output_filename);

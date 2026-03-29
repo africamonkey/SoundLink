@@ -77,7 +77,7 @@ cc_test(
     srcs = ["wav_noise_producer_test.cpp"],
     data = [
         "//params:wav_params",
-        "//src/wav/test_data:trival_encoder_sample",
+        "//src/wav/test_data:simple_encoder_sample",
     ],
     deps = [
         ":wav_noise_producer",

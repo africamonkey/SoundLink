@@ -1,6 +1,6 @@
 // Copyright (c) 2023. Kaiqi Wang - All Rights Reserved
 
-#include "src/encoder/trival_encoder.h"
+#include "src/encoder/simple_encoder.h"
 
 #include "glog/logging.h"
 #include "gtest/gtest.h"
@@ -13,13 +13,13 @@
 
 namespace encoder {
 
-TEST(TrivalEncoderTest, Encode) {
+TEST(SimpleEncoderTest, Encode) {
   interface::EncoderParams encoder_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat("params/encoder_params.txt", &encoder_params));
   interface::WavParams wav_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat("params/wav_params.txt", &wav_params));
   const int audio_sample_rate = wav_params.sample_rate();
-  TrivalEncoder trival_encoder(audio_sample_rate, std::move(encoder_params));
+  SimpleEncoder simple_encoder(audio_sample_rate, std::move(encoder_params));
   const std::string kStringToBeEncoded = "1f745684946ba0c5ccd19205003c387f637cfc736fe98af5c341c4c02bc54bb7";
 
   int encode_current_id = 0;
@@ -35,19 +35,19 @@ TEST(TrivalEncoderTest, Encode) {
   std::function set_next_sample = [&wav_writer](double sample) {
     wav_writer.AddSample(sample);
   };
-  trival_encoder.Encode(get_next_byte, set_next_sample);
+  simple_encoder.Encode(get_next_byte, set_next_sample);
   wav_writer.Write();
   io::DeleteFileIfExists(temp_filename);
 }
 
-TEST(TrivalEncoderTest, DecodeEasy) {
+TEST(SimpleEncoderTest, DecodeEasy) {
   interface::EncoderParams encoder_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat(
       "src/encoder/test_data/easy_encoder_params.txt", &encoder_params));
 
   wav::WavReader reader("src/encoder/test_data/easy.wav");
 
-  TrivalEncoder decoder(reader.GetWavHeader().sample_rate, encoder_params);
+  SimpleEncoder decoder(reader.GetWavHeader().sample_rate, encoder_params);
 
   std::vector<char> decoded_bytes;
   size_t sample_index = 0;
@@ -72,14 +72,14 @@ TEST(TrivalEncoderTest, DecodeEasy) {
   EXPECT_EQ(decoded_message, "kQ");
 }
 
-TEST(TrivalEncoderTest, DecodeMedium) {
+TEST(SimpleEncoderTest, DecodeMedium) {
   interface::EncoderParams encoder_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat(
       "src/encoder/test_data/medium_encoder_params.txt", &encoder_params));
 
   wav::WavReader reader("src/encoder/test_data/medium.wav");
 
-  TrivalEncoder decoder(reader.GetWavHeader().sample_rate, encoder_params);
+  SimpleEncoder decoder(reader.GetWavHeader().sample_rate, encoder_params);
 
   std::vector<char> decoded_bytes;
 

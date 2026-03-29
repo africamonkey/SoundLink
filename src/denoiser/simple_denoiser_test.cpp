@@ -12,7 +12,7 @@
 #include "src/common/file/io.h"
 #include "src/common/interface/proto/encoder_params.pb.h"
 #include "src/common/interface/proto/wav_params.pb.h"
-#include "src/encoder/trival_encoder.h"
+#include "src/encoder/simple_encoder.h"
 #include "src/wav/wav_noise_producer.h"
 #include "src/wav/wav_reader.h"
 #include "src/wav/wav_writer.h"
@@ -25,7 +25,7 @@ TEST(SimpleDenoiserTest, DenoiseWhiteNoise) {
   interface::WavParams wav_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat("params/wav_params.txt", &wav_params));
   const int audio_sample_rate = wav_params.sample_rate();
-  encoder::TrivalEncoder encoder(audio_sample_rate, std::move(encoder_params));
+  encoder::SimpleEncoder encoder(audio_sample_rate, std::move(encoder_params));
   const std::string kStringToBeEncoded = "Hello, World!";
 
   const std::string clean_wav_filename =
@@ -73,7 +73,7 @@ TEST(SimpleDenoiserTest, DenoiseWhiteNoise) {
   wav::WavReader denoised_reader(denoised_wav_filename);
   interface::EncoderParams decoder_encoder_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat("params/encoder_params.txt", &decoder_encoder_params));
-  encoder::TrivalEncoder decoder(denoised_reader.GetWavHeader().sample_rate, std::move(decoder_encoder_params));
+  encoder::SimpleEncoder decoder(denoised_reader.GetWavHeader().sample_rate, std::move(decoder_encoder_params));
 
   std::vector<char> decoded_bytes;
   auto get_next_audio_sample_for_decode = [&denoised_reader](double *next_sample) -> bool {
@@ -104,7 +104,7 @@ TEST(SimpleDenoiserTest, DenoiseUniformNoise) {
   interface::WavParams wav_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat("params/wav_params.txt", &wav_params));
   const int audio_sample_rate = wav_params.sample_rate();
-  encoder::TrivalEncoder encoder(audio_sample_rate, std::move(encoder_params));
+  encoder::SimpleEncoder encoder(audio_sample_rate, std::move(encoder_params));
   const std::string kStringToBeEncoded = "Test123";
 
   const std::string clean_wav_filename = io::GenerateTestFolder() + "/denoiser_test_uniform_clean.wav";
@@ -149,7 +149,7 @@ TEST(SimpleDenoiserTest, DenoiseUniformNoise) {
   wav::WavReader denoised_reader(denoised_wav_filename);
   interface::EncoderParams decoder_encoder_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat("params/encoder_params.txt", &decoder_encoder_params));
-  encoder::TrivalEncoder decoder(denoised_reader.GetWavHeader().sample_rate, std::move(decoder_encoder_params));
+  encoder::SimpleEncoder decoder(denoised_reader.GetWavHeader().sample_rate, std::move(decoder_encoder_params));
 
   std::vector<char> decoded_bytes;
   auto get_next_audio_sample_for_decode = [&denoised_reader](double *next_sample) -> bool {
