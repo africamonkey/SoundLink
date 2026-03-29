@@ -1,3 +1,6 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -6,7 +9,7 @@ cc_library(
     hdrs = ["encoder_base.h"],
     deps = [
         "//src/common/interface/proto:cc_encoder_params_proto",
-        "@glog//:glog",
+        "@glog",
     ],
 )
 
@@ -17,7 +20,7 @@ cc_library(
     deps = [
         ":encoder_base",
         "//src/common/math:math_utils",
-        "@glog//:glog",
+        "@glog",
     ],
 )
 
@@ -37,6 +40,6 @@ cc_test(
         "//src/common/testing:google_test_main",
         "//src/wav:wav_reader",
         "//src/wav:wav_writer",
-        "@glog//:glog",
+        "@glog",
     ],
 )

@@ -1,3 +1,5 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -5,9 +7,9 @@ cc_library(
     testonly = 1,
     srcs = ["google_test_main.cpp"],
     deps = [
-        "@glog//:glog",
+        "@gflags",
+        "@glog",
         "@googletest//:gtest",
-        "@gflags//:gflags",
     ],
     alwayslink = 1,
 )

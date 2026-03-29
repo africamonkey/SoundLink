@@ -1,3 +1,5 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -5,6 +7,6 @@ cc_library(
     srcs = ["math_utils.cpp"],
     hdrs = ["math_utils.h"],
     deps = [
-        "@glog//:glog",
+        "@glog",
     ],
 )

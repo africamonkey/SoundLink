@@ -1,10 +1,13 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "wav_header",
     hdrs = ["wav_header.h"],
     deps = [
-        "@glog//:glog",
+        "@glog",
     ],
 )
 
@@ -14,7 +17,7 @@ cc_library(
     hdrs = ["wav_reader.h"],
     deps = [
         ":wav_header",
-        "@glog//:glog",
+        "@glog",
     ],
 )
 
