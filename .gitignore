@@ -7,6 +7,7 @@ tmp/
 *.sw[a-p]
 *~
 *.DS_Store
+MODULE.bazel.lock
 
 # bazel files
 /bazel-ThruAudioXfer
