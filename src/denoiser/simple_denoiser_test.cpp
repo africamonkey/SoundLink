@@ -124,7 +124,7 @@ TEST(SimpleDenoiserTest, DenoiseUniformNoise) {
   clean_writer.Write();
 
   const std::string noisy_wav_filename = io::GenerateTestFolder() + "/denoiser_test_uniform_noisy.wav";
-  wav::AddUniformNoise(clean_wav_filename, noisy_wav_filename, 0.05);
+  wav::AddUniformNoise(clean_wav_filename, noisy_wav_filename, 0.1);
 
   const std::string denoised_wav_filename = io::GenerateTestFolder() + "/denoiser_test_uniform_denoised.wav";
   wav::WavReader noisy_reader(noisy_wav_filename);

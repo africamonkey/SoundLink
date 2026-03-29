@@ -1,5 +1,5 @@
 trival_encoder_params: {
-  encoder_rate: 220
+  encoder_rate: 10
   encode_frequency_for_bit_0: 880
   encode_frequency_for_bit_1: 1760
   encode_frequency_for_rest: 1244.50
