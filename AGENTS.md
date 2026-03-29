@@ -2,6 +2,20 @@
 
 Guidelines for agentic coding agents working on the ThruAudioXfer (TAXf) project.
 
+## Permissions
+
+### Allowed without prompting
+- Read files, list directories
+- Single file linting, type checking, formatting
+- Unit tests on specific files
+
+### Require approval first
+- Package installations (`uv add`, `npm install`)
+- Git operations (`git push`, `git commit`)
+- File deletion
+- Running full build or E2E test suites
+- Terraform apply/destroy operations
+
 ## Build System
 
 TAXf uses Bazel as its build system with C++17 standard.
