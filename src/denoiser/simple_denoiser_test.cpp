@@ -93,9 +93,9 @@ TEST(SimpleDenoiserTest, DenoiseWhiteNoise) {
   std::string decoded_message(decoded_bytes.begin(), decoded_bytes.end());
   EXPECT_EQ(decoded_message, kStringToBeEncoded);
 
-  //io::DeleteFileIfExists(clean_wav_filename);
-  //io::DeleteFileIfExists(noisy_wav_filename);
-  //io::DeleteFileIfExists(denoised_wav_filename);
+  io::DeleteFileIfExists(clean_wav_filename);
+  io::DeleteFileIfExists(noisy_wav_filename);
+  io::DeleteFileIfExists(denoised_wav_filename);
 }
 
 TEST(SimpleDenoiserTest, DenoiseUniformNoise) {
