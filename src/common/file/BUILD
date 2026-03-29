@@ -5,7 +5,7 @@ cc_library(
     srcs = ["io.cpp"],
     hdrs = ["io.h"],
     deps = [
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 

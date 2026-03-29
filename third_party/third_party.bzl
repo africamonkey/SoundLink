@@ -23,7 +23,6 @@ def third_party_repositories():
         urls = ["https://github.com/google/glog/archive/v0.5.0.tar.gz"],
     )
 
-    # rules_cc defines rules for generating C++ code from Protocol Buffers.
     http_archive(
         name = "rules_cc",
         urls = [
@@ -33,7 +32,6 @@ def third_party_repositories():
         strip_prefix = "rules_cc-0.0.6",
     )
 
-    # rules_proto defines abstract rules for building Protocol Buffers.
     http_archive(
         name = "rules_proto",
         sha256 = "dc3fb206a2cb3441b485eb1e423165b231235a1ea9b031b4433cf7bc1fa460dd",

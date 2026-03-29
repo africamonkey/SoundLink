@@ -1,4 +1,5 @@
 build --cxxopt='-std=c++17'
+build --macos_minimum_os=10.15
 
 build:asan --strip=never
 build:asan --copt -fsanitize=address

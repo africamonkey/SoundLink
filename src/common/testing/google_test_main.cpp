@@ -1,5 +1,6 @@
 // Copyright (c) 2023. Kaiqi Wang - All Rights Reserved
 
+#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
