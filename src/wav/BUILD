@@ -59,3 +59,32 @@ cc_test(
         "//src/common/testing:google_test_main",
     ],
 )
+
+cc_library(
+    name = "wav_noise_producer",
+    srcs = ["wav_noise_producer.cpp"],
+    hdrs = ["wav_noise_producer.h"],
+    deps = [
+        ":wav_reader",
+        ":wav_writer",
+        "//src/common/interface/proto:cc_wav_params_proto",
+        "@glog//:glog",
+    ],
+)
+
+cc_test(
+    name = "wav_noise_producer_test",
+    srcs = ["wav_noise_producer_test.cpp"],
+    data = [
+        "//params:wav_params",
+        "//src/wav/test_data:trival_encoder_sample",
+    ],
+    deps = [
+        ":wav_noise_producer",
+        ":wav_reader",
+        ":wav_writer",
+        "//src/common/file:io",
+        "//src/common/interface/proto:cc_wav_params_proto",
+        "//src/common/testing:google_test_main",
+    ],
+)
