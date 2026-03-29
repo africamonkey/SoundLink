@@ -75,7 +75,12 @@ bool AudioPlayer::Play(const double* samples, size_t num_samples) {
   }
 
   while (Pa_IsStreamActive(impl_->stream)) {
-    Pa_Sleep(10);
+    while (impl_->playback_index < impl_->playback_size) {
+      Pa_WriteStream(impl_->stream, &impl_->float_buffer[impl_->playback_index],
+                     kFramesPerBuffer);
+      impl_->playback_index += kFramesPerBuffer;
+    }
+    break;
   }
 
   err = Pa_StopStream(impl_->stream);
