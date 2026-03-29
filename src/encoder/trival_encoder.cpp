@@ -30,11 +30,13 @@ void TrivalEncoder::Encode(const std::function<bool(char *)> &get_next_byte,
                            const std::function<void(double)> &set_next_audio_sample) const {
   char next_byte;
   int current_bit_count = 0;
+  // +1s
   for (int i = 0; i < audio_sample_rate_; ++i) {
     set_next_audio_sample(0.0);
   }
   while (get_next_byte(&next_byte)) {
     int next_byte_to_int = (int) static_cast<unsigned char>(next_byte);
+    // little endian
     for (int j = 0; j < 8; ++j) {
       int next_count = static_cast<int>((current_bit_count + 1) * audio_sample_rate_ / encoder_rate_);
       int curr_count = static_cast<int>(current_bit_count * audio_sample_rate_ / encoder_rate_);
@@ -52,6 +54,7 @@ void TrivalEncoder::Encode(const std::function<bool(char *)> &get_next_byte,
       }
     }
   }
+  // +1s
   for (int i = 0; i < audio_sample_rate_; ++i) {
     set_next_audio_sample(0.0);
   }
