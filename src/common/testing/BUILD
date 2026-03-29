@@ -7,8 +7,8 @@ cc_library(
     testonly = 1,
     srcs = ["google_test_main.cpp"],
     deps = [
-        "@gflags",
-        "@glog",
+        "@gflags//:gflags",
+        "@glog//:glog",
         "@googletest//:gtest",
     ],
     alwayslink = 1,

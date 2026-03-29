@@ -7,6 +7,6 @@ cc_library(
     srcs = ["math_utils.cpp"],
     hdrs = ["math_utils.h"],
     deps = [
-        "@glog",
+        "@glog//:glog",
     ],
 )

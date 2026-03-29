@@ -7,7 +7,7 @@ cc_library(
     name = "wav_header",
     hdrs = ["wav_header.h"],
     deps = [
-        "@glog",
+        "@glog//:glog",
     ],
 )
 
@@ -17,7 +17,7 @@ cc_library(
     hdrs = ["wav_reader.h"],
     deps = [
         ":wav_header",
-        "@glog",
+        "@glog//:glog",
     ],
 )
 

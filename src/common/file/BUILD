@@ -8,7 +8,7 @@ cc_library(
     srcs = ["io.cpp"],
     hdrs = ["io.h"],
     deps = [
-        "@protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 

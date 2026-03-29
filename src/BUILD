@@ -12,6 +12,6 @@ cc_binary(
         "//src/common/file:io",
         "//src/common/math:math_utils",
         "//src/wav:wav_writer",
-        "@glog",
+        "@glog//:glog",
     ],
 )
