@@ -1,6 +1,6 @@
 // Copyright (c) 2023. Kaiqi Wang - All Rights Reserved
 
-#include "trival_encoder.h"
+#include "simple_encoder.h"
 
 #include <cmath>
 
@@ -9,24 +9,24 @@
 
 namespace encoder {
 
-TrivalEncoder::TrivalEncoder(int audio_sample_rate, interface::EncoderParams encoder_params) : EncoderBase(
+SimpleEncoder::SimpleEncoder(int audio_sample_rate, interface::EncoderParams encoder_params) : EncoderBase(
     audio_sample_rate,
     std::move(encoder_params)) {
-  CHECK(encoder_params_.has_trival_encoder_params());
-  CHECK(encoder_params_.trival_encoder_params().has_encoder_rate());
-  CHECK_GT(encoder_params_.trival_encoder_params().encoder_rate(), 0.0);
-  encoder_rate_ = encoder_params_.trival_encoder_params().encoder_rate();
-  encode_frequency_for_bit_0_ = encoder_params_.trival_encoder_params().encode_frequency_for_bit_0();
-  encode_frequency_for_bit_1_ = encoder_params_.trival_encoder_params().encode_frequency_for_bit_1();
-  encode_frequency_for_rest_ = encoder_params_.trival_encoder_params().encode_frequency_for_rest();
-  minimum_absolute_amplitude_ = encoder_params_.trival_encoder_params().minimum_absolute_amplitude();
-  maximum_standard_error_ = encoder_params_.trival_encoder_params().maximum_standard_error();
+  CHECK(encoder_params_.has_simple_encoder_params());
+  CHECK(encoder_params_.simple_encoder_params().has_encoder_rate());
+  CHECK_GT(encoder_params_.simple_encoder_params().encoder_rate(), 0.0);
+  encoder_rate_ = encoder_params_.simple_encoder_params().encoder_rate();
+  encode_frequency_for_bit_0_ = encoder_params_.simple_encoder_params().encode_frequency_for_bit_0();
+  encode_frequency_for_bit_1_ = encoder_params_.simple_encoder_params().encode_frequency_for_bit_1();
+  encode_frequency_for_rest_ = encoder_params_.simple_encoder_params().encode_frequency_for_rest();
+  minimum_absolute_amplitude_ = encoder_params_.simple_encoder_params().minimum_absolute_amplitude();
+  maximum_standard_error_ = encoder_params_.simple_encoder_params().maximum_standard_error();
   maximum_standard_error_for_half_window_ =
-      encoder_params_.trival_encoder_params().maximum_standard_error_for_half_window();
+      encoder_params_.simple_encoder_params().maximum_standard_error_for_half_window();
   CHECK_GT(audio_sample_rate_, encoder_rate_ * 2);
 }
 
-void TrivalEncoder::Encode(const std::function<bool(char *)> &get_next_byte,
+void SimpleEncoder::Encode(const std::function<bool(char *)> &get_next_byte,
                            const std::function<void(double)> &set_next_audio_sample) const {
   char next_byte;
   int current_bit_count = 0;
@@ -60,7 +60,7 @@ void TrivalEncoder::Encode(const std::function<bool(char *)> &get_next_byte,
   }
 }
 
-void TrivalEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sample,
+void SimpleEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sample,
                            const std::function<void(char)>& set_next_byte) const {
   const int window_size = static_cast<int>(audio_sample_rate_ / encoder_rate_);
   SampleWindow sample_window(audio_sample_rate_, window_size);
@@ -107,23 +107,23 @@ void TrivalEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sa
   CHECK_EQ(last_byte_bit_count, 0) << "Decode error: Incomplete data.";
 }
 
-TrivalEncoder::SampleWindow::SampleWindow(int audio_sample_rate, int max_window_size)
+SimpleEncoder::SampleWindow::SampleWindow(int audio_sample_rate, int max_window_size)
     : audio_sample_rate_(audio_sample_rate),
       max_window_size_(max_window_size),
       samples_(),
       amplitude_sum_(0.0),
       sign_diff_sum_(0) {}
 
-size_t TrivalEncoder::SampleWindow::Size() const {
+size_t SimpleEncoder::SampleWindow::Size() const {
   return samples_.size();
 }
 
-double TrivalEncoder::SampleWindow::GetAverageAmplitude() const {
+double SimpleEncoder::SampleWindow::GetAverageAmplitude() const {
   CHECK_GT(Size(), 0);
   return amplitude_sum_ * M_PI_2 / (double) Size();
 }
 
-double TrivalEncoder::SampleWindow::GetAverageFrequency() const {
+double SimpleEncoder::SampleWindow::GetAverageFrequency() const {
   CHECK_GT(Size(), 0);
   if (sign_diff_sum_ == 0) {
     return 0.0;
@@ -131,7 +131,7 @@ double TrivalEncoder::SampleWindow::GetAverageFrequency() const {
   return (double) sign_diff_sum_ * audio_sample_rate_ / (double) samples_.size() / 2.0;
 }
 
-void TrivalEncoder::SampleWindow::Clear() {
+void SimpleEncoder::SampleWindow::Clear() {
   while (!samples_.empty()) {
     samples_.pop_front();
   }
@@ -139,7 +139,7 @@ void TrivalEncoder::SampleWindow::Clear() {
   sign_diff_sum_ = 0;
 }
 
-void TrivalEncoder::SampleWindow::PushBack(double sample) {
+void SimpleEncoder::SampleWindow::PushBack(double sample) {
   amplitude_sum_ += std::abs(sample);
   if (!samples_.empty()) {
     if (samples_.back() <= 0.0 && sample > 0.0) {
@@ -154,7 +154,7 @@ void TrivalEncoder::SampleWindow::PushBack(double sample) {
   }
 }
 
-void TrivalEncoder::SampleWindow::PopFront() {
+void SimpleEncoder::SampleWindow::PopFront() {
   CHECK(!samples_.empty());
   const double last_sample_front = samples_.front();
   amplitude_sum_ -= std::abs(samples_.front());

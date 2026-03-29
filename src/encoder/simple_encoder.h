@@ -8,9 +8,9 @@
 
 namespace encoder {
 
-class TrivalEncoder final : public EncoderBase {
+class SimpleEncoder final : public EncoderBase {
  public:
-  TrivalEncoder(int audio_sample_rate, interface::EncoderParams encoder_params);
+  SimpleEncoder(int audio_sample_rate, interface::EncoderParams encoder_params);
 
   void Encode(const std::function<bool(char *)> &get_next_byte,
               const std::function<void(double)> &set_next_audio_sample) const override;

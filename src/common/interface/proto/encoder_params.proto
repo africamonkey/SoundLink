@@ -4,11 +4,11 @@ package interface;
 
 // Next id: 2
 message EncoderParams {
-  optional TrivalEncoderParams trival_encoder_params = 1;
+  optional SimpleEncoderParams simple_encoder_params = 1;
 }
 
 // Next id: 8
-message TrivalEncoderParams {
+message SimpleEncoderParams {
   optional double encoder_rate = 1;
   optional double encode_frequency_for_bit_0 = 2;
   optional double encode_frequency_for_bit_1 = 3;

@@ -14,9 +14,9 @@ cc_library(
 )
 
 cc_library(
-    name = "trival_encoder",
-    srcs = ["trival_encoder.cpp"],
-    hdrs = ["trival_encoder.h"],
+    name = "simple_encoder",
+    srcs = ["simple_encoder.cpp"],
+    hdrs = ["simple_encoder.h"],
     deps = [
         ":encoder_base",
         "//src/common/math:math_utils",
@@ -25,8 +25,8 @@ cc_library(
 )
 
 cc_test(
-    name = "trival_encoder_test",
-    srcs = ["trival_encoder_test.cpp"],
+    name = "simple_encoder_test",
+    srcs = ["simple_encoder_test.cpp"],
     data = [
         "//params:encoder_params",
         "//params:wav_params",
@@ -34,7 +34,7 @@ cc_test(
         "//src/encoder/test_data:medium",
     ],
     deps = [
-        ":trival_encoder",
+        ":simple_encoder",
         "//src/common/file:io",
         "//src/common/interface/proto:cc_wav_params_proto",
         "//src/common/testing:google_test_main",

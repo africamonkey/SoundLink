@@ -21,7 +21,7 @@ cc_binary(
         ":receiver",
         "//src/common/file:io",
         "//src/common/interface/proto:cc_encoder_params_proto",
-        "//src/encoder:trival_encoder",
+        "//src/encoder:simple_encoder",
         "@gflags//:gflags",
         "@glog//:glog",
     ],

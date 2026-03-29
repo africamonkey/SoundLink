@@ -35,7 +35,7 @@ cc_test(
         "//src/common/interface/proto:cc_encoder_params_proto",
         "//src/common/interface/proto:cc_wav_params_proto",
         "//src/common/testing:google_test_main",
-        "//src/encoder:trival_encoder",
+        "//src/encoder:simple_encoder",
         "//src/wav:wav_noise_producer",
         "//src/wav:wav_reader",
         "//src/wav:wav_writer",
