@@ -25,7 +25,7 @@ TEST(AudioNoiseTest, AddWhiteNoiseCustomFile) {
   LOG(ERROR) << output_filename;
 
   AddWhiteNoise(input_filename, output_filename, 0.1);
-  // io::DeleteFileIfExists(output_filename);
+  io::DeleteFileIfExists(output_filename);
 }
 
 TEST(AudioNoiseTest, AddWhiteNoiseSingleChannel) {
