@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
 
   std::string message;
   std::cout << "Enter message to send: ";
-  std::getline(std::cin, message);
+  std::cin >> message;
 
   if (!sender.SendMessage(message)) {
     std::cerr << "Failed to send message" << std::endl;

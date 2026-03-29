@@ -16,7 +16,7 @@ cc_library(
 
 cc_binary(
     name = "sender_main",
-    srcs = ["main.cpp"],
+    srcs = ["sender_main.cpp"],
     deps = [
         ":sender",
         "//src/common/file:io",
