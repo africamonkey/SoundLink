@@ -64,7 +64,7 @@ TEST(TrivalEncoderTest, DecodeEasy) {
   EXPECT_EQ(decoded_string, kCorrectAnswer);
 }
 
-TEST(TrivalEncoderTest, DISABLED_DecodeMedium) {
+TEST(TrivalEncoderTest, DecodeMedium) {
   interface::EncoderParams encoder_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat("src/encoder/test_data/medium_encoder_params.txt",
                                             &encoder_params));
