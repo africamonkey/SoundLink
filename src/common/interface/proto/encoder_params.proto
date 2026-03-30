@@ -2,12 +2,13 @@ syntax = "proto2";
 
 package interface;
 
-// Next id: 2
+// Next id: 3
 message EncoderParams {
   optional SimpleEncoderParams simple_encoder_params = 1;
+  optional GoertzelEncoderParams goertzel_encoder_params = 2;
 }
 
-// Next id: 8
+// Next id: 9
 message SimpleEncoderParams {
   optional double encoder_rate = 1;
   optional double encode_frequency_for_bit_0 = 2;
@@ -16,4 +17,16 @@ message SimpleEncoderParams {
   optional double minimum_absolute_amplitude = 5;
   optional double maximum_standard_error = 6;
   optional double maximum_standard_error_for_half_window = 7;
+}
+
+message GoertzelEncoderParams {
+  optional double encoder_rate = 1;
+  optional double encode_frequency_for_bit_0 = 2;
+  optional double encode_frequency_for_bit_1 = 3;
+  optional double encode_frequency_for_rest = 4;
+  optional double minimum_absolute_amplitude = 5;
+  optional int32 goertzel_window_size = 6;
+  optional double frequency_tolerance = 7;
+  optional double minimum_energy_ratio = 8;
+  optional int32 voting_window_size = 9;
 }

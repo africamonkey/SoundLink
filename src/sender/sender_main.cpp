@@ -9,7 +9,7 @@
 
 #include "src/common/file/io.h"
 #include "src/common/interface/proto/encoder_params.pb.h"
-#include "src/encoder/simple_encoder.h"
+#include "src/encoder/goertzel_encoder.h"
 #include "src/sender/sender.h"
 
 DEFINE_string(encoder_params, "params/encoder_params.txt", "Path to encoder params file");
@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
   }
 
   constexpr int kAudioSampleRate = 44100;
-  auto encoder = std::make_shared<encoder::SimpleEncoder>(kAudioSampleRate, encoder_params);
+  auto encoder = std::make_shared<encoder::GoertzelEncoder>(kAudioSampleRate, encoder_params);
 
   sender::Sender sender(kAudioSampleRate, encoder);
   if (!sender.Initialize()) {
