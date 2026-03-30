@@ -61,6 +61,7 @@ cc_test(
     data = [
         "//params:wav_params",
         "//src/encoder/goertzel_encoder_test_data:goertzel_easy",
+        "//src/encoder/goertzel_encoder_test_data:goertzel_easy_noisy",
         "//src/encoder/goertzel_encoder_test_data:goertzel_medium",
     ],
     deps = [

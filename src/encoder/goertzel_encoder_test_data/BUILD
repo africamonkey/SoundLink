@@ -4,7 +4,15 @@ filegroup(
     name = "goertzel_easy",
     srcs = [
         "easy.wav",
-        "goertzel_easy_encoder_params.txt",
+        "easy_encoder_params.txt",
+    ],
+)
+
+filegroup(
+    name = "goertzel_easy_noisy",
+    srcs = [
+        "easy_noisy.wav",
+        "easy_noisy_encoder_params.txt",
     ],
 )
 
@@ -12,6 +20,6 @@ filegroup(
     name = "goertzel_medium",
     srcs = [
         "medium.wav",
-        "goertzel_medium_encoder_params.txt",
+        "medium_encoder_params.txt",
     ],
 )
