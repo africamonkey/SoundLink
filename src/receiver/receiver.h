@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "src/audio/audio_capturer.h"
-#include "src/denoiser/simple_denoiser.h"
 #include "src/encoder/encoder_base.h"
 
 namespace receiver {
@@ -33,7 +32,6 @@ class Receiver {
   std::shared_ptr<encoder::EncoderBase> decoder_;
   std::unique_ptr<audio::AudioCapturer> capturer_;
   std::vector<double> sample_buffer_;
-  std::vector<double> denoised_buffer_;
   MessageCallback message_callback_;
   DataCallback data_callback_;
 };

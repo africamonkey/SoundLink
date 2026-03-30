@@ -9,7 +9,6 @@ cc_library(
     hdrs = ["receiver.h"],
     deps = [
         "//src/audio:audio",
-        "//src/denoiser:simple_denoiser",
         "//src/encoder:encoder_base",
         "@glog//:glog",
     ],
