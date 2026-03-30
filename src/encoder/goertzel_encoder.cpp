@@ -28,7 +28,7 @@ GoertzelEncoder::GoertzelEncoder(int audio_sample_rate, interface::EncoderParams
   frequency_tolerance_ = params.frequency_tolerance() > 0 ? params.frequency_tolerance() : 0.15;
   minimum_energy_ratio_ = params.minimum_energy_ratio() > 0 ? params.minimum_energy_ratio() : 2.0;
   voting_window_size_ = params.voting_window_size() > 0 ? params.voting_window_size() : 3;
-  window_size_ = static_cast<int>(audio_sample_rate_ / encoder_rate_);
+  window_size_ = static_cast<int>(audio_sample_rate_ / encoder_rate_) * 2;
   CHECK_GT(audio_sample_rate_, encoder_rate_ * 2);
 }
 
