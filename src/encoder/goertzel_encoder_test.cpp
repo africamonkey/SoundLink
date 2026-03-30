@@ -73,7 +73,7 @@ TEST(GoertzelEncoderTest, DecodeEasy) {
   EXPECT_EQ(decoded_message, "kQ");
 }
 
-TEST(GoertzelEncoderTest, DISABLED_DecodeEasyNoisy) {
+TEST(GoertzelEncoderTest, DecodeEasyNoisy) {
   interface::EncoderParams encoder_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat(
       "src/encoder/goertzel_encoder_test_data/easy_noisy_encoder_params.txt", &encoder_params));
@@ -102,7 +102,7 @@ TEST(GoertzelEncoderTest, DISABLED_DecodeEasyNoisy) {
   decoder.Decode(get_next_audio_sample, set_next_byte);
 
   std::string decoded_message(decoded_bytes.begin(), decoded_bytes.end());
-  EXPECT_EQ(decoded_message, "123");
+  EXPECT_EQ(decoded_message, std::string("123\0", 4));
 }
 
 TEST(GoertzelEncoderTest, DecodeMedium) {

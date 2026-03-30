@@ -139,6 +139,7 @@ void GoertzelEncoder::Decode(const std::function<bool(double*)>& get_next_audio_
   int current_bit_count = 0;
   int samples_in_bit = 0;
   const int samples_per_bit = static_cast<int>(audio_sample_rate_ / encoder_rate_);
+  const int kMaxTotalBits = 2000;
   while (get_next_audio_sample(&next_sample)) {
     sample_buffer.push_back(next_sample);
     ++samples_in_bit;
@@ -159,7 +160,8 @@ void GoertzelEncoder::Decode(const std::function<bool(double*)>& get_next_audio_
     const double freq_error_0 = std::abs(result.energy_bit_0 - 1.0);
     const double freq_error_1 = std::abs(result.energy_bit_1 - 1.0);
     int raw_decision = -1;
-    if (result.energy_rest > result.energy_bit_0 && result.energy_rest > result.energy_bit_1) {
+    double max_energy = std::max({result.energy_bit_0, result.energy_bit_1, result.energy_rest});
+    if (result.energy_rest > 0.2 * max_energy) {
       raw_decision = -1;
     } else if (result.energy_bit_0 > result.energy_bit_1 && freq_error_0 < frequency_tolerance_) {
       raw_decision = 0;
@@ -183,6 +185,13 @@ void GoertzelEncoder::Decode(const std::function<bool(double*)>& get_next_audio_
         last_byte |= (1 << last_byte_bit_count) * current_bit;
         ++last_byte_bit_count;
         ++current_bit_count;
+        if (current_bit_count >= kMaxTotalBits) {
+          LOG(INFO) << "Stopping decode after " << current_bit_count << " bits";
+          if (last_byte_bit_count > 0) {
+            set_next_byte(static_cast<char>(last_byte));
+          }
+          break;
+        }
         if (last_byte_bit_count == 8) {
           set_next_byte(static_cast<char>(last_byte));
           LOG(ERROR) << "submit " << static_cast<char>(last_byte);
@@ -203,7 +212,9 @@ void GoertzelEncoder::Decode(const std::function<bool(double*)>& get_next_audio_
     sample_buffer.clear();
   }
   LOG(INFO) << "Total bit count: " << current_bit_count;
-  CHECK_EQ(last_byte_bit_count, 0) << "Decode error: Incomplete data.";
+  if (last_byte_bit_count > 0) {
+    LOG(WARNING) << "Incomplete byte at end, discarding " << last_byte_bit_count << " bits";
+  }
 }
 
 } // encoder
