@@ -43,9 +43,9 @@ TEST(SimpleEncoderTest, Encode) {
 TEST(SimpleEncoderTest, DecodeEasy) {
   interface::EncoderParams encoder_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat(
-      "src/encoder/test_data/easy_encoder_params.txt", &encoder_params));
+      "src/encoder/simple_encoder_test_data/easy_encoder_params.txt", &encoder_params));
 
-  wav::WavReader reader("src/encoder/test_data/easy.wav");
+  wav::WavReader reader("src/encoder/simple_encoder_test_data/easy.wav");
 
   SimpleEncoder decoder(reader.GetWavHeader().sample_rate, encoder_params);
 
@@ -75,9 +75,9 @@ TEST(SimpleEncoderTest, DecodeEasy) {
 TEST(SimpleEncoderTest, DecodeMedium) {
   interface::EncoderParams encoder_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat(
-      "src/encoder/test_data/medium_encoder_params.txt", &encoder_params));
+      "src/encoder/simple_encoder_test_data/medium_encoder_params.txt", &encoder_params));
 
-  wav::WavReader reader("src/encoder/test_data/medium.wav");
+  wav::WavReader reader("src/encoder/simple_encoder_test_data/medium.wav");
 
   SimpleEncoder decoder(reader.GetWavHeader().sample_rate, encoder_params);
 

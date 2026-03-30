@@ -30,11 +30,41 @@ cc_test(
     data = [
         "//params:encoder_params",
         "//params:wav_params",
-        "//src/encoder/test_data:easy",
-        "//src/encoder/test_data:medium",
+        "//src/encoder/simple_encoder_test_data:simple_encoder_easy",
+        "//src/encoder/simple_encoder_test_data:simple_encoder_medium",
     ],
     deps = [
         ":simple_encoder",
+        "//src/common/file:io",
+        "//src/common/interface/proto:cc_wav_params_proto",
+        "//src/common/testing:google_test_main",
+        "//src/wav:wav_reader",
+        "//src/wav:wav_writer",
+        "@glog//:glog",
+    ],
+)
+
+cc_library(
+    name = "goertzel_encoder",
+    srcs = ["goertzel_encoder.cpp"],
+    hdrs = ["goertzel_encoder.h"],
+    deps = [
+        ":encoder_base",
+        "//src/common/math:math_utils",
+        "@glog//:glog",
+    ],
+)
+
+cc_test(
+    name = "goertzel_encoder_test",
+    srcs = ["goertzel_encoder_test.cpp"],
+    data = [
+        "//params:wav_params",
+        "//src/encoder/goertzel_encoder_test_data:goertzel_easy",
+        "//src/encoder/goertzel_encoder_test_data:goertzel_medium",
+    ],
+    deps = [
+        ":goertzel_encoder",
         "//src/common/file:io",
         "//src/common/interface/proto:cc_wav_params_proto",
         "//src/common/testing:google_test_main",
