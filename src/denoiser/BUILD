@@ -23,6 +23,16 @@ cc_library(
 )
 
 cc_library(
+    name = "adaptive_noise_gating_denoiser",
+    srcs = ["adaptive_noise_gating_denoiser.cpp"],
+    hdrs = ["adaptive_noise_gating_denoiser.h"],
+    deps = [
+        ":denoiser_base",
+        "@glog//:glog",
+    ],
+)
+
+cc_library(
     name = "audio_normalizer",
     srcs = ["audio_normalizer.cpp"],
     hdrs = ["audio_normalizer.h"],
@@ -78,6 +88,28 @@ cc_test(
     ],
     deps = [
         ":simple_denoiser",
+        "//src/common/file:io",
+        "//src/common/interface/proto:cc_encoder_params_proto",
+        "//src/common/interface/proto:cc_wav_params_proto",
+        "//src/common/testing:google_test_main",
+        "//src/encoder:simple_encoder",
+        "//src/wav:wav_noise_producer",
+        "//src/wav:wav_reader",
+        "//src/wav:wav_writer",
+        "@gflags//:gflags",
+        "@glog//:glog",
+    ],
+)
+
+cc_test(
+    name = "adaptive_noise_gating_denoiser_test",
+    srcs = ["adaptive_noise_gating_denoiser_test.cpp"],
+    data = [
+        "//params:encoder_params",
+        "//params:wav_params",
+    ],
+    deps = [
+        ":adaptive_noise_gating_denoiser",
         "//src/common/file:io",
         "//src/common/interface/proto:cc_encoder_params_proto",
         "//src/common/interface/proto:cc_wav_params_proto",
