@@ -23,7 +23,6 @@ GoertzelEncoder::GoertzelEncoder(int audio_sample_rate, interface::EncoderParams
   encode_frequency_for_bit_0_ = params.encode_frequency_for_bit_0();
   encode_frequency_for_bit_1_ = params.encode_frequency_for_bit_1();
   encode_frequency_for_rest_ = params.encode_frequency_for_rest();
-  minimum_absolute_amplitude_ = params.minimum_absolute_amplitude();
   goertzel_window_size_ = params.goertzel_window_size() > 0 ? params.goertzel_window_size() : 256;
   frequency_tolerance_ = params.frequency_tolerance() > 0 ? params.frequency_tolerance() : 0.15;
   minimum_energy_ratio_ = params.minimum_energy_ratio() > 0 ? params.minimum_energy_ratio() : 2.0;
@@ -61,13 +60,21 @@ GoertzelEncoder::DetectionResult GoertzelEncoder::AnalyzeWindow(const std::vecto
   InitGoertzel(&states[1], encode_frequency_for_bit_1_);
   InitGoertzel(&states[2], encode_frequency_for_rest_);
   double amplitude_sum = 0.0;
+  double rms_sum = 0.0;
   for (double sample : samples) {
-    amplitude_sum += std::abs(sample);
-    ProcessGoertzelSample(&states[0], sample);
-    ProcessGoertzelSample(&states[1], sample);
-    ProcessGoertzelSample(&states[2], sample);
+    double abs_sample = std::abs(sample);
+    amplitude_sum += abs_sample;
+    rms_sum += sample * sample;
   }
   result.amplitude = amplitude_sum * M_PI_2 / samples.size();
+  double rms = std::sqrt(rms_sum / samples.size());
+  double normalize_factor = (rms > math::kEpsilon) ? (1.0 / rms) : 1.0;
+  for (double sample : samples) {
+    double normalized_sample = sample * normalize_factor;
+    ProcessGoertzelSample(&states[0], normalized_sample);
+    ProcessGoertzelSample(&states[1], normalized_sample);
+    ProcessGoertzelSample(&states[2], normalized_sample);
+  }
   result.energy_bit_0 = ComputeGoertzelEnergy(states[0]);
   result.energy_bit_1 = ComputeGoertzelEnergy(states[1]);
   result.energy_rest = ComputeGoertzelEnergy(states[2]);
@@ -151,17 +158,22 @@ void GoertzelEncoder::Decode(const std::function<bool(double*)>& get_next_audio_
     }
     std::vector<double> window_samples(sample_buffer.begin(), sample_buffer.end());
     DetectionResult result = AnalyzeWindow(window_samples);
-    if (std::abs(result.amplitude) < minimum_absolute_amplitude_) {
-      samples_in_bit = 0;
-      sample_buffer.clear();
-      continue;
-    }
     const double energy_ratio = result.energy_bit_1 / (result.energy_bit_0 + math::kEpsilon);
     const double freq_error_0 = std::abs(result.energy_bit_0 - 1.0);
     const double freq_error_1 = std::abs(result.energy_bit_1 - 1.0);
     int raw_decision = -1;
     double max_energy = std::max({result.energy_bit_0, result.energy_bit_1, result.energy_rest});
-    if (result.energy_rest > 0.2 * max_energy) {
+    double second_energy = 0.0;
+    if (max_energy == result.energy_bit_0) {
+      second_energy = std::max(result.energy_bit_1, result.energy_rest);
+    } else if (max_energy == result.energy_bit_1) {
+      second_energy = std::max(result.energy_bit_0, result.energy_rest);
+    } else {
+      second_energy = std::max(result.energy_bit_0, result.energy_bit_1);
+    }
+    if (result.amplitude < 0.03) {
+      raw_decision = -1;
+    } else if (result.energy_rest > 0.2 * max_energy || second_energy > 0.6 * max_energy) {
       raw_decision = -1;
     } else if (result.energy_bit_0 > result.energy_bit_1 && freq_error_0 < frequency_tolerance_) {
       raw_decision = 0;

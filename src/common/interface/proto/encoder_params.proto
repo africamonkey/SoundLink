@@ -24,7 +24,6 @@ message GoertzelEncoderParams {
   optional double encode_frequency_for_bit_0 = 2;
   optional double encode_frequency_for_bit_1 = 3;
   optional double encode_frequency_for_rest = 4;
-  optional double minimum_absolute_amplitude = 5;
   optional int32 goertzel_window_size = 6;
   optional double frequency_tolerance = 7;
   optional double minimum_energy_ratio = 8;

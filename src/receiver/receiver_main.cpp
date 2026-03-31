@@ -33,7 +33,6 @@ int main(int argc, char* argv[]) {
     LOG(INFO) << "  bit_0 freq: " << p.encode_frequency_for_bit_0();
     LOG(INFO) << "  bit_1 freq: " << p.encode_frequency_for_bit_1();
     LOG(INFO) << "  rest freq: " << p.encode_frequency_for_rest();
-    LOG(INFO) << "  min amplitude: " << p.minimum_absolute_amplitude();
   }
 
   constexpr int kAudioSampleRate = 44100;
