@@ -28,3 +28,16 @@ cc_binary(
         "@glog//:glog",
     ],
 )
+
+cc_binary(
+    name = "receiver_recorder_main",
+    srcs = ["receiver_recorder_main.cpp"],
+    deps = [
+        "//src/audio:audio",
+        "//src/common/file:io",
+        "//src/common/interface/proto:cc_wav_params_proto",
+        "//src/wav:wav_writer",
+        "@gflags//:gflags",
+        "@glog//:glog",
+    ],
+)
