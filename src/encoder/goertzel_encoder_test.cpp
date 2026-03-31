@@ -108,9 +108,9 @@ TEST(GoertzelEncoderTest, DecodeEasyNoisy) {
 TEST(GoertzelEncoderTest, DecodeEasyNoisyPlus) {
   interface::EncoderParams encoder_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat(
-      "src/encoder/goertzel_encoder_test_data/easy_noisy_encoder_params.txt", &encoder_params));
+      "src/encoder/goertzel_encoder_test_data/easy_noisy_plus_encoder_params.txt", &encoder_params));
 
-  wav::WavReader reader("src/encoder/goertzel_encoder_test_data/easy_noisy.wav");
+  wav::WavReader reader("src/encoder/goertzel_encoder_test_data/easy_noisy_plus.wav");
 
   GoertzelEncoder decoder(reader.GetWavHeader().sample_rate, encoder_params);
 
