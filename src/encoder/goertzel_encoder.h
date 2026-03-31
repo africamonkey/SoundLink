@@ -47,7 +47,6 @@ class GoertzelEncoder final : public EncoderBase {
   double encode_frequency_for_bit_0_ = 0.0;
   double encode_frequency_for_bit_1_ = 0.0;
   double encode_frequency_for_rest_ = 0.0;
-  double minimum_absolute_amplitude_ = 0.0;
   int goertzel_window_size_ = 0;
   double frequency_tolerance_ = 0.0;
   double minimum_energy_ratio_ = 0.0;
