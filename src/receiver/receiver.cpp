@@ -38,8 +38,10 @@ bool Receiver::StartCapture() {
     for (size_t i = 0; i < num_samples; ++i) {
       sample_buffer_.push_back(static_cast<double>(samples[i]));
     }
+    LOG_EVERY_N(INFO, 100) << "Captured " << num_samples << " samples, buffer size: " << sample_buffer_.size();
   };
 
+  LOG(INFO) << "Starting audio capture...";
   capturer_->StartCapture(audio_callback);
   return true;
 }
@@ -47,10 +49,16 @@ bool Receiver::StartCapture() {
 void Receiver::StopCapture() {
   capturer_->StopCapture();
 
+  LOG(INFO) << "Capture stopped. Total samples captured: " << sample_buffer_.size();
+
   if (sample_buffer_.empty()) {
     LOG(WARNING) << "No samples captured";
     return;
   }
+
+  double min_sample = *std::min_element(sample_buffer_.begin(), sample_buffer_.end());
+  double max_sample = *std::max_element(sample_buffer_.begin(), sample_buffer_.end());
+  LOG(INFO) << "Sample range: [" << min_sample << ", " << max_sample << "]";
 
   std::vector<char> decoded_bytes;
   size_t sample_index = 0;

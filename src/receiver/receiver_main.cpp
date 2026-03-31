@@ -26,6 +26,16 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  if (encoder_params.has_goertzel_encoder_params()) {
+    const auto& p = encoder_params.goertzel_encoder_params();
+    LOG(INFO) << "Decoder using GoertzelEncoder params:";
+    LOG(INFO) << "  encoder_rate: " << p.encoder_rate();
+    LOG(INFO) << "  bit_0 freq: " << p.encode_frequency_for_bit_0();
+    LOG(INFO) << "  bit_1 freq: " << p.encode_frequency_for_bit_1();
+    LOG(INFO) << "  rest freq: " << p.encode_frequency_for_rest();
+    LOG(INFO) << "  min amplitude: " << p.minimum_absolute_amplitude();
+  }
+
   constexpr int kAudioSampleRate = 44100;
   auto decoder = std::make_shared<encoder::GoertzelEncoder>(kAudioSampleRate, encoder_params);
 
