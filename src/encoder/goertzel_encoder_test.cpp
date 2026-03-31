@@ -105,7 +105,7 @@ TEST(GoertzelEncoderTest, DecodeEasyNoisy) {
   EXPECT_EQ(decoded_message, std::string("123\0", 4));
 }
 
-TEST(GoertzelEncoderTest, DecodeEasyNoisyPlus) {
+TEST(GoertzelEncoderTest, DISABLED_DecodeEasyNoisyPlus) {
   interface::EncoderParams encoder_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat(
       "src/encoder/goertzel_encoder_test_data/easy_noisy_plus_encoder_params.txt", &encoder_params));

@@ -9,8 +9,7 @@
 namespace receiver {
 
 Receiver::Receiver(int audio_sample_rate, std::shared_ptr<encoder::EncoderBase> decoder)
-    : audio_sample_rate_(audio_sample_rate),
-      decoder_(decoder),
+    : decoder_(decoder),
       capturer_(new audio::AudioCapturer(audio_sample_rate)) {}
 
 Receiver::~Receiver() { Close(); }
@@ -32,9 +31,7 @@ void Receiver::SetDataCallback(DataCallback callback) {
 }
 
 bool Receiver::StartCapture() {
-  std::vector<char> decoded_bytes;
-
-  auto audio_callback = [this, &decoded_bytes](const float* samples, size_t num_samples) {
+  auto audio_callback = [this](const float* samples, size_t num_samples) {
     for (size_t i = 0; i < num_samples; ++i) {
       sample_buffer_.push_back(static_cast<double>(samples[i]));
     }
