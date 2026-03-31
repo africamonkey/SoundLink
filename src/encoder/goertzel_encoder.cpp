@@ -172,6 +172,12 @@ void GoertzelEncoder::Decode(const std::function<bool(double*)>& get_next_audio_
     } else if (energy_ratio < 1.0 / minimum_energy_ratio_) {
       raw_decision = 0;
     }
+    if (raw_decision < 0) {
+      LOG_EVERY_N(INFO, 100) << "rejected window: amp=" << result.amplitude
+          << " E0=" << result.energy_bit_0 << " E1=" << result.energy_bit_1
+          << " Erest=" << result.energy_rest << " maxE=" << max_energy
+          << " ratio=" << energy_ratio << " err0=" << freq_error_0 << " err1=" << freq_error_1;
+    }
     if (raw_decision >= 0) {
       recent_decisions.push_back(raw_decision);
       if ((int)recent_decisions.size() > voting_window_size_) {

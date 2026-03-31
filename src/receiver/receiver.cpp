@@ -11,8 +11,7 @@ namespace receiver {
 Receiver::Receiver(int audio_sample_rate, std::shared_ptr<encoder::EncoderBase> decoder)
     : audio_sample_rate_(audio_sample_rate),
       decoder_(decoder),
-      capturer_(new audio::AudioCapturer(audio_sample_rate)),
-      denoised_buffer_() {}
+      capturer_(new audio::AudioCapturer(audio_sample_rate)) {}
 
 Receiver::~Receiver() { Close(); }
 
@@ -35,12 +34,14 @@ void Receiver::SetDataCallback(DataCallback callback) {
 bool Receiver::StartCapture() {
   std::vector<char> decoded_bytes;
 
-  auto audio_callback = [this](const float* samples, size_t num_samples) {
+  auto audio_callback = [this, &decoded_bytes](const float* samples, size_t num_samples) {
     for (size_t i = 0; i < num_samples; ++i) {
       sample_buffer_.push_back(static_cast<double>(samples[i]));
     }
+    LOG_EVERY_N(INFO, 100) << "Captured " << num_samples << " samples, buffer size: " << sample_buffer_.size();
   };
 
+  LOG(INFO) << "Starting audio capture...";
   capturer_->StartCapture(audio_callback);
   return true;
 }
@@ -48,15 +49,18 @@ bool Receiver::StartCapture() {
 void Receiver::StopCapture() {
   capturer_->StopCapture();
 
+  LOG(INFO) << "Capture stopped. Total samples captured: " << sample_buffer_.size();
+
   if (sample_buffer_.empty()) {
     LOG(WARNING) << "No samples captured";
     return;
   }
 
-  denoised_buffer_.clear();
-  denoised_buffer_.reserve(sample_buffer_.size());
+  double min_sample = *std::min_element(sample_buffer_.begin(), sample_buffer_.end());
+  double max_sample = *std::max_element(sample_buffer_.begin(), sample_buffer_.end());
+  LOG(INFO) << "Sample range: [" << min_sample << ", " << max_sample << "]";
 
-  denoiser::SimpleDenoiser denoiser(audio_sample_rate_);
+  std::vector<char> decoded_bytes;
   size_t sample_index = 0;
 
   auto get_next_audio_sample = [this, &sample_index](double* next_sample) -> bool {
@@ -68,31 +72,11 @@ void Receiver::StopCapture() {
     return true;
   };
 
-  auto set_next_audio_sample = [this](double sample) {
-    denoised_buffer_.push_back(sample);
-  };
-
-  denoiser.Denoise(get_next_audio_sample, set_next_audio_sample);
-
-  LOG(INFO) << "Denoised " << denoised_buffer_.size() << " samples";
-
-  std::vector<char> decoded_bytes;
-  sample_index = 0;
-
-  auto get_denoised_sample = [this, &sample_index](double* next_sample) -> bool {
-    if (sample_index >= denoised_buffer_.size()) {
-      return false;
-    }
-    *next_sample = denoised_buffer_[sample_index];
-    ++sample_index;
-    return true;
-  };
-
   auto set_next_byte = [&decoded_bytes](char byte) {
     decoded_bytes.push_back(byte);
   };
 
-  decoder_->Decode(get_denoised_sample, set_next_byte);
+  decoder_->Decode(get_next_audio_sample, set_next_byte);
 
   LOG(INFO) << "Decoded " << decoded_bytes.size() << " bytes";
 

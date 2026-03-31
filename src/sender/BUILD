@@ -17,6 +17,7 @@ cc_library(
 cc_binary(
     name = "sender_main",
     srcs = ["sender_main.cpp"],
+    data = ["//params:encoder_params.txt"],
     deps = [
         ":sender",
         "//src/common/file:io",
