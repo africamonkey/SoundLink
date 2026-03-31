@@ -123,3 +123,26 @@ cc_test(
         "@glog//:glog",
     ],
 )
+
+cc_test(
+    name = "denoiser_benchmark_test",
+    srcs = ["denoiser_benchmark_test.cpp"],
+    data = [
+        "//params:encoder_params",
+        "//params:wav_params",
+    ],
+    deps = [
+        ":adaptive_noise_gating_denoiser",
+        ":simple_denoiser",
+        "//src/common/file:io",
+        "//src/common/interface/proto:cc_encoder_params_proto",
+        "//src/common/interface/proto:cc_wav_params_proto",
+        "//src/common/testing:google_test_main",
+        "//src/encoder:goertzel_encoder",
+        "//src/wav:wav_noise_producer",
+        "//src/wav:wav_reader",
+        "//src/wav:wav_writer",
+        "@gflags//:gflags",
+        "@glog//:glog",
+    ],
+)
