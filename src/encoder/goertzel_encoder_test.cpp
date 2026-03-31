@@ -105,6 +105,38 @@ TEST(GoertzelEncoderTest, DecodeEasyNoisy) {
   EXPECT_EQ(decoded_message, std::string("123\0", 4));
 }
 
+TEST(GoertzelEncoderTest, DecodeEasyNoisyPlus) {
+  interface::EncoderParams encoder_params;
+  ASSERT_TRUE(io::ReadFromProtoInTextFormat(
+      "src/encoder/goertzel_encoder_test_data/easy_noisy_encoder_params.txt", &encoder_params));
+
+  wav::WavReader reader("src/encoder/goertzel_encoder_test_data/easy_noisy.wav");
+
+  GoertzelEncoder decoder(reader.GetWavHeader().sample_rate, encoder_params);
+
+  std::vector<char> decoded_bytes;
+  size_t sample_index = 0;
+
+  auto get_next_audio_sample = [&reader, &sample_index](double* next_sample) -> bool {
+    if (reader.IsEof()) {
+      return false;
+    }
+    std::pair<double, double> sample = reader.GetSample();
+    *next_sample = sample.first;
+    ++sample_index;
+    return true;
+  };
+
+  auto set_next_byte = [&decoded_bytes](char byte) {
+    decoded_bytes.push_back(byte);
+  };
+
+  decoder.Decode(get_next_audio_sample, set_next_byte);
+
+  std::string decoded_message(decoded_bytes.begin(), decoded_bytes.end());
+  EXPECT_EQ(decoded_message, std::string("123\0", 4));
+}
+
 TEST(GoertzelEncoderTest, DecodeMedium) {
   interface::EncoderParams encoder_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat(

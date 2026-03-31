@@ -17,6 +17,14 @@ filegroup(
 )
 
 filegroup(
+    name = "goertzel_easy_noisy_plus",
+    srcs = [
+        "easy_noisy_plus.wav",
+        "easy_noisy_plus_encoder_params.txt",
+    ],
+)
+
+filegroup(
     name = "goertzel_medium",
     srcs = [
         "medium.wav",
