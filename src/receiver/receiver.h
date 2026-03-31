@@ -28,7 +28,6 @@ class Receiver {
   void Close();
 
  private:
-  int audio_sample_rate_;
   std::shared_ptr<encoder::EncoderBase> decoder_;
   std::unique_ptr<audio::AudioCapturer> capturer_;
   std::vector<double> sample_buffer_;
