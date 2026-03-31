@@ -71,6 +71,7 @@ cc_binary(
     deps = [
         ":audio_normalizer",
         ":simple_denoiser",
+        ":adaptive_noise_gating_denoiser",
         "//src/common/file:io",
         "//src/wav:wav_reader",
         "//src/wav:wav_writer",

@@ -10,6 +10,7 @@
 #include "src/common/file/io.h"
 #include "src/denoiser/audio_normalizer.h"
 #include "src/denoiser/simple_denoiser.h"
+#include "src/denoiser/adaptive_noise_gating_denoiser.h"
 #include "src/wav/wav_reader.h"
 #include "src/wav/wav_writer.h"
 
@@ -18,6 +19,8 @@ DEFINE_int32(sample_rate, 44100, "Audio sample rate");
 DEFINE_int32(window_size, 1024, "Window size for denoiser and normalizer");
 DEFINE_double(target_amplitude, 0.9, "Target amplitude for normalizer");
 DEFINE_double(noise_floor_estimation_frames, 10, "Noise floor estimation frames for simple_denoiser");
+DEFINE_double(attenuation_factor, 0.1, "Attenuation factor for adaptive noise gating denoiser");
+DEFINE_string(denoiser_type, "adaptive", "Denoiser type: 'simple' or 'adaptive'");
 
 int main(int argc, char *argv[]) {
   google::InitGoogleLogging(argv[0]);
@@ -56,8 +59,13 @@ int main(int argc, char *argv[]) {
     auto set_next = [&after_denoiser1](double s) {
       after_denoiser1.push_back(s);
     };
-    denoiser::SimpleDenoiser denoiser(FLAGS_sample_rate, FLAGS_window_size, FLAGS_noise_floor_estimation_frames);
-    denoiser.Denoise(get_next, set_next);
+    if (FLAGS_denoiser_type == "simple") {
+      denoiser::SimpleDenoiser denoiser(FLAGS_sample_rate, FLAGS_window_size, FLAGS_noise_floor_estimation_frames);
+      denoiser.Denoise(get_next, set_next);
+    } else {
+      denoiser::AdaptiveNoiseGatingDenoiser denoiser(FLAGS_sample_rate, FLAGS_window_size, FLAGS_noise_floor_estimation_frames, FLAGS_attenuation_factor);
+      denoiser.Denoise(get_next, set_next);
+    }
   }
   LOG(INFO) << "After denoiser1: " << after_denoiser1.size() << " samples";
 
@@ -90,8 +98,13 @@ int main(int argc, char *argv[]) {
     auto set_next = [&after_denoiser2](double s) {
       after_denoiser2.push_back(s);
     };
-    denoiser::SimpleDenoiser denoiser(FLAGS_sample_rate, FLAGS_window_size, FLAGS_noise_floor_estimation_frames);
-    denoiser.Denoise(get_next, set_next);
+    if (FLAGS_denoiser_type == "simple") {
+      denoiser::SimpleDenoiser denoiser(FLAGS_sample_rate, FLAGS_window_size, FLAGS_noise_floor_estimation_frames);
+      denoiser.Denoise(get_next, set_next);
+    } else {
+      denoiser::AdaptiveNoiseGatingDenoiser denoiser(FLAGS_sample_rate, FLAGS_window_size, FLAGS_noise_floor_estimation_frames, FLAGS_attenuation_factor);
+      denoiser.Denoise(get_next, set_next);
+    }
   }
   LOG(INFO) << "After denoiser2: " << after_denoiser2.size() << " samples";
 
