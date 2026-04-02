@@ -25,7 +25,8 @@ void AddWhiteNoise(const std::string &input_filename, const std::string &output_
   wav::WavWriter writer(output_filename, wav_params);
 
   std::normal_distribution<double> distribution(0.0, 1.0);
-  std::mt19937 rng(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
+  // always uses the same random seed.
+  std::mt19937 rng(0);
 
   while (!reader.IsEof()) {
     auto sample = reader.GetSample();
@@ -54,7 +55,8 @@ void AddUniformNoise(const std::string &input_filename, const std::string &outpu
   wav::WavWriter writer(output_filename, wav_params);
 
   std::uniform_real_distribution<double> distribution(-1.0, 1.0);
-  std::mt19937 rng(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
+  // always uses the same random seed.
+  std::mt19937 rng(0);
 
   while (!reader.IsEof()) {
     auto sample = reader.GetSample();
@@ -83,7 +85,8 @@ void AddPinkNoise(const std::string &input_filename, const std::string &output_f
   wav::WavWriter writer(output_filename, wav_params);
 
   std::normal_distribution<double> white_distribution(0.0, 1.0);
-  std::mt19937 rng(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
+  // always uses the same random seed.
+  std::mt19937 rng(0);
 
   double b0_0 = 0.0, b1_0 = 0.0, b2_0 = 0.0, b3_0 = 0.0, b4_0 = 0.0, b5_0 = 0.0, b6_0 = 0.0;
   double b0_1 = 0.0, b1_1 = 0.0, b2_1 = 0.0, b3_1 = 0.0, b4_1 = 0.0, b5_1 = 0.0, b6_1 = 0.0;
@@ -134,7 +137,8 @@ void AddBrownNoise(const std::string &input_filename, const std::string &output_
   wav::WavWriter writer(output_filename, wav_params);
 
   std::normal_distribution<double> white_distribution(0.0, 1.0);
-  std::mt19937 rng(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
+  // always uses the same random seed.
+  std::mt19937 rng(0);
 
   double last_0 = 0.0;
   double last_1 = 0.0;
