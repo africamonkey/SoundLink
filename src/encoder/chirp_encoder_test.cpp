@@ -290,4 +290,128 @@ TEST(ChirpEncoderTest, RoundTripWithBrownNoise10dBSNR) {
   }
 }
 
+TEST(ChirpEncoderTest, RoundTripWithSilenceBeforeAndAfter) {
+  interface::WavParams wav_params;
+  io::ReadFromProtoInTextFormat("params/wav_params.txt", &wav_params);
+  const int audio_sample_rate = wav_params.sample_rate();
+
+  interface::EncoderParams encoder_params = CreateChirpEncoderParams(0.25);
+
+  const std::vector<std::string> test_strings = {
+    "Short",
+    "MediumText",
+    "LongerStringTest"
+  };
+
+  for (const auto& str : test_strings) {
+    const std::string temp_filename = io::GenerateTestFolder() + "/chirp_silence_test.wav";
+    const std::string silence_filename = io::GenerateTestFolder() + "/chirp_silence_test_silence.wav";
+    const std::string noisy_filename = io::GenerateTestFolder() + "/chirp_silence_test_noisy.wav";
+
+    EncodeString(str, encoder_params, temp_filename, audio_sample_rate);
+
+    wav::WavReader reader(temp_filename);
+    interface::WavParams output_wav_params;
+    output_wav_params.set_num_channels(1);
+    output_wav_params.set_sample_rate(audio_sample_rate);
+    output_wav_params.set_bit_depth(16);
+
+    wav::WavWriter silence_writer(silence_filename, output_wav_params);
+
+    for (int i = 0; i < audio_sample_rate * 2; ++i) {
+      silence_writer.AddSample(0.0);
+    }
+
+    while (!reader.IsEof()) {
+      auto sample = reader.GetSample();
+      silence_writer.AddSample(sample.first);
+    }
+
+    for (int i = 0; i < audio_sample_rate * 3; ++i) {
+      silence_writer.AddSample(0.0);
+    }
+
+    silence_writer.Write();
+    reader.Close();
+
+    wav::AddWhiteNoise(silence_filename, noisy_filename, 0.1);
+
+    std::string result = DecodeFile(noisy_filename, encoder_params, audio_sample_rate);
+
+    EXPECT_EQ(result, str) << "Silence handling failed for: " << str;
+
+    io::DeleteFileIfExists(temp_filename);
+    io::DeleteFileIfExists(silence_filename);
+    io::DeleteFileIfExists(noisy_filename);
+  }
+}
+
+TEST(ChirpEncoderTest, RoundTripWithVariableSilenceAndNoise10dB) {
+  interface::WavParams wav_params;
+  io::ReadFromProtoInTextFormat("params/wav_params.txt", &wav_params);
+  const int audio_sample_rate = wav_params.sample_rate();
+
+  interface::EncoderParams encoder_params = CreateChirpEncoderParams(0.25);
+
+  const std::vector<std::string> test_strings = {
+    "TestA",
+    "TestB",
+    "TestC"
+  };
+
+  const std::vector<std::pair<int, int>> silence_configs = {
+    {0, 0},
+    {500, 0},
+    {0, 500},
+    {500, 500},
+    {1000, 1000},
+  };
+
+  for (const auto& str : test_strings) {
+    for (const auto& [silence_before_ms, silence_after_ms] : silence_configs) {
+      const std::string temp_filename = io::GenerateTestFolder() + "/chirp_var_silence.wav";
+      const std::string silence_filename = io::GenerateTestFolder() + "/chirp_var_silence_silence.wav";
+      const std::string noisy_filename = io::GenerateTestFolder() + "/chirp_var_silence_noisy.wav";
+
+      EncodeString(str, encoder_params, temp_filename, audio_sample_rate);
+
+      wav::WavReader reader(temp_filename);
+      interface::WavParams output_wav_params;
+      output_wav_params.set_num_channels(1);
+      output_wav_params.set_sample_rate(audio_sample_rate);
+      output_wav_params.set_bit_depth(16);
+
+      wav::WavWriter writer(silence_filename, output_wav_params);
+
+      for (int i = 0; i < silence_before_ms * audio_sample_rate / 1000; ++i) {
+        writer.AddSample(0.0);
+      }
+
+      while (!reader.IsEof()) {
+        auto sample = reader.GetSample();
+        writer.AddSample(sample.first);
+      }
+
+      for (int i = 0; i < silence_after_ms * audio_sample_rate / 1000; ++i) {
+        writer.AddSample(0.0);
+      }
+
+      writer.Write();
+      reader.Close();
+
+      wav::AddWhiteNoise(silence_filename, noisy_filename, 0.316);
+
+      std::string result = DecodeFile(noisy_filename, encoder_params, audio_sample_rate);
+
+      EXPECT_EQ(result, str) << "Variable silence (before=" << silence_before_ms
+                             << "ms, after=" << silence_after_ms
+                             << "ms) failed for: " << str;
+
+      io::DeleteFileIfExists(temp_filename);
+      io::DeleteFileIfExists(silence_filename);
+      io::DeleteFileIfExists(noisy_filename);
+    }
+  }
+}
+
 }  // namespace encoder

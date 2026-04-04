@@ -144,12 +144,14 @@ void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sam
   double next_sample;
 
   int sync_matched = 0;
+  int consecutive_failures = 0;
   int samples_until_next_chirp = 0;
   int current_bit_count = 0;
   int last_byte = 0;
   int last_byte_bit_count = 0;
 
   const int kMaxTotalBits = 2000;
+  const int kSyncConsecutiveFailuresLimit = 5;
 
   enum class State {
     kWaitingForSync,
@@ -174,6 +176,7 @@ void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sam
       if (detected_type == 0) {
         LOG(INFO) << "Sync chirp " << sync_matched + 1 << " detected";
         ++sync_matched;
+        consecutive_failures = 0;
         sample_buffer.clear();
         if (sync_matched >= sync_chirp_count_) {
           state = State::kInSync;
@@ -181,9 +184,13 @@ void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sam
           LOG(INFO) << "Sync complete, starting data decode";
         }
       } else {
-        if (sync_matched > 0 && detected_type != 0) {
-          LOG(WARNING) << "Sync lost at " << sync_matched << ", resetting";
-          sync_matched = 0;
+        if (sync_matched > 0) {
+          ++consecutive_failures;
+          if (consecutive_failures >= kSyncConsecutiveFailuresLimit) {
+            LOG(WARNING) << "Sync lost after " << consecutive_failures << " failures, resetting";
+            sync_matched = 0;
+            consecutive_failures = 0;
+          }
         }
       }
     } else if (state == State::kInSync) {
