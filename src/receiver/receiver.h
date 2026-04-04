@@ -22,6 +22,8 @@ class Receiver {
   using DataCallback = std::function<void(const std::vector<char>&)>;
 
   Receiver(int audio_sample_rate, std::shared_ptr<encoder::EncoderBase> decoder);
+  Receiver(int audio_sample_rate, std::shared_ptr<encoder::EncoderBase> decoder,
+           std::unique_ptr<audio::AudioCapturer> capturer);
   ~Receiver();
 
   bool Initialize();
@@ -41,6 +43,7 @@ class Receiver {
   std::thread decode_thread_;
   std::mutex buffer_mutex_;
   std::condition_variable buffer_cv_;
+  std::condition_variable decoding_cv_;
   bool stop_decode_ = false;
   bool buffer_has_data_ = false;
   std::atomic<bool> decoding_in_progress_{false};

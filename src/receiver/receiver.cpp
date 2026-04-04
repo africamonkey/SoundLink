@@ -3,6 +3,7 @@
 #include "src/receiver/receiver.h"
 
 #include <algorithm>
+#include <chrono>
 
 #include "glog/logging.h"
 
@@ -10,7 +11,14 @@ namespace receiver {
 
 Receiver::Receiver(int audio_sample_rate, std::shared_ptr<encoder::EncoderBase> decoder)
     : decoder_(decoder),
-      capturer_(new audio::AudioCapturer(audio_sample_rate)),
+      capturer_(std::make_unique<audio::AudioCapturer>(audio_sample_rate)),
+      stop_decode_(false),
+      buffer_has_data_(false) {}
+
+Receiver::Receiver(int audio_sample_rate, std::shared_ptr<encoder::EncoderBase> decoder,
+                   std::unique_ptr<audio::AudioCapturer> capturer)
+    : decoder_(decoder),
+      capturer_(std::move(capturer)),
       stop_decode_(false),
       buffer_has_data_(false) {}
 
@@ -84,8 +92,10 @@ void Receiver::StopCapture() {
 
 void Receiver::DecodeLoop() {
   auto get_sample = [this](double* next_sample) -> bool {
-    if (local_buffer_.empty()) {
-      return false;
+    while (local_buffer_.empty()) {
+      if (stop_decode_) return false;
+      std::unique_lock<std::mutex> lock(buffer_mutex_);
+      buffer_cv_.wait_for(lock, std::chrono::milliseconds(10));
     }
     *next_sample = local_buffer_.front();
     local_buffer_.pop_front();

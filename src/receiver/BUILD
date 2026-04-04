@@ -1,5 +1,6 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -40,5 +41,17 @@ cc_binary(
         "//src/wav:wav_writer",
         "@gflags//:gflags",
         "@glog//:glog",
+    ],
+)
+
+cc_test(
+    name = "receiver_test",
+    srcs = ["receiver_test.cpp"],
+    deps = [
+        ":receiver",
+        "//src/common/testing:google_test_main",
+        "//src/encoder:encoder_base",
+        "@glog//:glog",
+        "@googletest//:gtest",
     ],
 )
