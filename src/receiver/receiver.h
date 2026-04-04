@@ -37,16 +37,13 @@ class Receiver {
   std::shared_ptr<encoder::EncoderBase> decoder_;
   std::unique_ptr<audio::AudioCapturer> capturer_;
   std::vector<double> sample_buffer_;
-  std::deque<double> local_buffer_;
   MessageCallback message_callback_;
   DataCallback data_callback_;
   std::thread decode_thread_;
   std::mutex buffer_mutex_;
   std::condition_variable buffer_cv_;
-  std::condition_variable decoding_cv_;
   bool stop_decode_ = false;
   bool buffer_has_data_ = false;
-  std::atomic<bool> decoding_in_progress_{false};
   void DecodeLoop();
 };
 

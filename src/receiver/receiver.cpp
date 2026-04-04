@@ -69,12 +69,7 @@ void Receiver::StopCapture() {
   LOG(INFO) << "Capture stopped.";
 
   {
-    std::unique_lock<std::mutex> lock(buffer_mutex_);
-    while (decoding_in_progress_) {
-      buffer_cv_.wait_for(lock, std::chrono::milliseconds(10));
-    }
-    local_buffer_.insert(local_buffer_.end(), sample_buffer_.begin(), sample_buffer_.end());
-    sample_buffer_.clear();
+    std::lock_guard<std::mutex> lock(buffer_mutex_);
     stop_decode_ = true;
   }
   buffer_cv_.notify_one();
@@ -82,23 +77,30 @@ void Receiver::StopCapture() {
   if (decode_thread_.joinable()) {
     decode_thread_.join();
   }
-
-  LOG(INFO) << "Total samples captured: " << sample_buffer_.size();
-
-  double min_sample = *std::min_element(sample_buffer_.begin(), sample_buffer_.end());
-  double max_sample = *std::max_element(sample_buffer_.begin(), sample_buffer_.end());
-  LOG(INFO) << "Sample range: [" << min_sample << ", " << max_sample << "]";
 }
 
 void Receiver::DecodeLoop() {
-  auto get_sample = [this](double* next_sample) -> bool {
-    while (local_buffer_.empty()) {
-      if (stop_decode_) return false;
+  std::deque<double> local_buffer;
+  size_t decoded_samples = 0;
+  auto get_sample = [this, &local_buffer, &decoded_samples](double* next_sample) -> bool {
+    if (local_buffer.empty()) {
       std::unique_lock<std::mutex> lock(buffer_mutex_);
-      buffer_cv_.wait_for(lock, std::chrono::milliseconds(10));
+      while (!stop_decode_ && !buffer_has_data_) {
+        buffer_cv_.wait(lock);
+      }
+      if (stop_decode_ && local_buffer.empty()) {
+        return false;
+      }
+      local_buffer.insert(local_buffer.end(), sample_buffer_.begin(), sample_buffer_.end());
+      sample_buffer_.clear();
+      buffer_has_data_ = false;
     }
-    *next_sample = local_buffer_.front();
-    local_buffer_.pop_front();
+
+    *next_sample = local_buffer.front();
+    ++decoded_samples;
+    LOG_EVERY_N(INFO, 10000) << "num_decoded_samples=" << decoded_samples << ", "
+                             << "local_buffer_size=" << local_buffer.size() << ".";
+    local_buffer.pop_front();
     return true;
   };
 
@@ -107,25 +109,7 @@ void Receiver::DecodeLoop() {
       message_callback_(std::string(1, byte));
     }
   };
-
-  while (true) {
-    {
-      std::unique_lock<std::mutex> lock(buffer_mutex_);
-      while (!stop_decode_ && !buffer_has_data_) {
-        buffer_cv_.wait(lock);
-      }
-      if (stop_decode_ && local_buffer_.empty()) break;
-      local_buffer_.insert(local_buffer_.end(), sample_buffer_.begin(), sample_buffer_.end());
-      sample_buffer_.clear();
-      buffer_has_data_ = false;
-    }
-
-    if (!local_buffer_.empty()) {
-      decoding_in_progress_ = true;
-      decoder_->Decode(get_sample, set_next_byte);
-      decoding_in_progress_ = false;
-    }
-  }
+  decoder_->Decode(get_sample, set_next_byte);
 
   LOG(INFO) << "Decode thread exiting";
 }
