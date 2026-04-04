@@ -9,7 +9,7 @@
 namespace sender {
 
 Sender::Sender(int audio_sample_rate, std::shared_ptr<encoder::EncoderBase> encoder)
-    : audio_sample_rate_(audio_sample_rate), encoder_(encoder), player_(new audio::AudioPlayer(audio_sample_rate)) {}
+    : encoder_(encoder), player_(new audio::AudioPlayer(audio_sample_rate)) {}
 
 Sender::~Sender() { Close(); }
 

@@ -1,0 +1,8 @@
+chirp_encoder_params: {
+  chirp_duration_ms: 100.0
+  frequency_low: 500.0
+  frequency_high: 2000.0
+  sync_chirp_count: 2
+  detection_threshold: 0.3
+  correlation_window_size: 256
+}
