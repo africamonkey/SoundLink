@@ -22,7 +22,6 @@ class Sender {
   void Close();
 
  private:
-  int audio_sample_rate_;
   std::shared_ptr<encoder::EncoderBase> encoder_;
   std::unique_ptr<audio::AudioPlayer> player_;
 };

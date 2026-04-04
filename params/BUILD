@@ -11,5 +11,6 @@ filegroup(
     name = "encoder_params",
     srcs = [
         "encoder_params.txt",
+        "encoder_params_prod.txt",
     ],
 )

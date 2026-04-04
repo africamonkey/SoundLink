@@ -13,7 +13,7 @@
 #include "src/encoder/chirp_encoder.h"
 #include "src/receiver/receiver.h"
 
-DEFINE_string(encoder_params, "params/encoder_params.txt", "Path to encoder params file");
+DEFINE_string(encoder_params, "params/encoder_params_prod.txt", "Path to encoder params file");
 DEFINE_int32(capture_duration_seconds, 10, "Duration to capture audio in seconds");
 
 int main(int argc, char* argv[]) {

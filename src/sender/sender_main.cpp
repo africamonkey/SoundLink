@@ -12,7 +12,7 @@
 #include "src/encoder/chirp_encoder.h"
 #include "src/sender/sender.h"
 
-DEFINE_string(encoder_params, "params/encoder_params.txt", "Path to encoder params file");
+DEFINE_string(encoder_params, "params/encoder_params_prod.txt", "Path to encoder params file");
 
 int main(int argc, char* argv[]) {
   google::InitGoogleLogging(argv[0]);
