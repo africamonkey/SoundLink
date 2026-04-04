@@ -22,7 +22,7 @@ cc_binary(
         ":sender",
         "//src/common/file:io",
         "//src/common/interface/proto:cc_encoder_params_proto",
-        "//src/encoder:goertzel_encoder",
+        "//src/encoder:chirp_encoder",
         "//src/encoder:simple_encoder",
         "@gflags//:gflags",
         "@glog//:glog",
