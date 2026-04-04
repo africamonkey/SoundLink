@@ -6,6 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <thread>
 
 #include "src/common/file/io.h"
 #include "src/common/interface/proto/encoder_params.pb.h"
@@ -35,26 +36,23 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  receiver.SetMessageCallback([](const std::string& message) {
-    std::cout << "Received message: " << message << std::endl;
+  receiver.SetMessageCallback([](const std::string& byte) {
+    std::cout << byte << std::flush;
   });
 
   receiver.SetDataCallback([](const std::vector<char>& data) {
-    std::cout << "Received " << data.size() << " bytes of data" << std::endl;
   });
 
-  std::cout << "Starting capture for " << FLAGS_capture_duration_seconds << " seconds..." << std::endl;
+  std::cout << "Starting real-time capture (Ctrl+C to stop)..." << std::endl;
 
   if (!receiver.StartCapture()) {
     std::cerr << "Failed to start capture" << std::endl;
     return 1;
   }
 
-  sleep(FLAGS_capture_duration_seconds);
+  std::cout << std::endl;
 
-  receiver.StopCapture();
-  receiver.Close();
-
-  std::cout << "Capture completed!" << std::endl;
-  return 0;
+  while (true) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
 }
