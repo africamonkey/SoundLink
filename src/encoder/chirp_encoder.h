@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <deque>
 #include <vector>
 #include <complex>
 
@@ -18,8 +17,7 @@ class ChirpEncoder final : public EncoderBase {
               const std::function<void(double)> &set_next_audio_sample) const override;
 
   void Decode(const std::function<bool(double*)>& get_next_audio_sample,
-              const std::function<void(char)>& set_next_byte,
-              int max_total_bits = 0) const override;
+              const std::function<void(char)>& set_next_byte) const override;
 
  private:
   enum class ChirpType {
