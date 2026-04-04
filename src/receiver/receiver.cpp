@@ -3,6 +3,7 @@
 #include "src/receiver/receiver.h"
 
 #include <algorithm>
+#include <chrono>
 #include <deque>
 
 #include "glog/logging.h"
@@ -43,13 +44,17 @@ bool Receiver::StartCapture() {
       buffer_has_data_ = true;
     }
     buffer_cv_.notify_one();
+    {
+      std::lock_guard<std::mutex> lock(samples_mutex_);
+      samples_count_.fetch_add(num_samples);
+      samples_cv_.notify_one();
+    }
     LOG_EVERY_N(INFO, 100) << "Captured " << num_samples << " samples, buffer size: " << sample_buffer_.size();
   };
 
   LOG(INFO) << "Starting audio capture...";
 
   stop_decode_ = false;
-  eos_ = false;
   buffer_has_data_ = false;
   decode_thread_ = std::thread(&Receiver::DecodeLoop, this);
 
@@ -63,13 +68,19 @@ void Receiver::StopCapture() {
   LOG(INFO) << "Capture stopped.";
 
   {
-    std::lock_guard<std::mutex> lock(buffer_mutex_);
+    std::unique_lock<std::mutex> lock(buffer_mutex_);
+    while (decoding_in_progress_) {
+      buffer_cv_.wait_for(lock, std::chrono::milliseconds(10));
+    }
     local_buffer_.insert(local_buffer_.end(), sample_buffer_.begin(), sample_buffer_.end());
     sample_buffer_.clear();
-    eos_ = true;
     stop_decode_ = true;
   }
   buffer_cv_.notify_one();
+  {
+    std::lock_guard<std::mutex> lock(samples_mutex_);
+    samples_cv_.notify_one();
+  }
 
   if (decode_thread_.joinable()) {
     decode_thread_.join();
@@ -85,8 +96,10 @@ void Receiver::StopCapture() {
 void Receiver::DecodeLoop() {
   auto get_sample = [this](double* next_sample) -> bool {
     if (local_buffer_.empty()) {
-      if (eos_) return false;
-      return false;
+      std::unique_lock<std::mutex> lock(samples_mutex_);
+      samples_cv_.wait(lock, [this] { return samples_count_ > 0 || stop_decode_; });
+      if (stop_decode_) return false;
+      samples_count_--;
     }
     *next_sample = local_buffer_.front();
     local_buffer_.pop_front();
@@ -112,7 +125,9 @@ void Receiver::DecodeLoop() {
     }
 
     if (!local_buffer_.empty()) {
+      decoding_in_progress_ = true;
       decoder_->Decode(get_sample, set_next_byte);
+      decoding_in_progress_ = false;
     }
   }
 
