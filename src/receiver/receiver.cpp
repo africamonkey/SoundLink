@@ -107,7 +107,7 @@ void Receiver::DecodeLoop() {
 
     if (!local_buffer.empty()) {
       sample_index = 0;
-      decoder_->Decode(get_sample, set_next_byte, 0);
+      decoder_->Decode(get_sample, set_next_byte);
     }
   }
 

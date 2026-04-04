@@ -139,8 +139,7 @@ void ChirpEncoder::Encode(const std::function<bool(char *)> &get_next_byte,
 }
 
 void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sample,
-                           const std::function<void(char)>& set_next_byte,
-                           int max_total_bits) const {
+                           const std::function<void(char)>& set_next_byte) const {
   std::deque<double> sample_buffer;
   double next_sample;
 
@@ -218,14 +217,6 @@ void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sam
 
         LOG(INFO) << "Decoded bit " << bit << " (total: " << current_bit_count
                   << "), byte progress: " << last_byte_bit_count;
-
-        if (max_total_bits > 0 && current_bit_count >= max_total_bits) {
-          LOG(INFO) << "Stopping decode after " << current_bit_count << " bits (limit)";
-          if (last_byte_bit_count > 0) {
-            set_next_byte(static_cast<char>(last_byte));
-          }
-          break;
-        }
 
         if (last_byte_bit_count == 8) {
           set_next_byte(static_cast<char>(last_byte));

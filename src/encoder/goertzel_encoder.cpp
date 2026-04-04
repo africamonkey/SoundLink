@@ -137,8 +137,7 @@ void GoertzelEncoder::Encode(const std::function<bool(char *)> &get_next_byte,
 }
 
 void GoertzelEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sample,
-                             const std::function<void(char)>& set_next_byte,
-                             int max_total_bits) const {
+                             const std::function<void(char)>& set_next_byte) const {
   std::deque<double> sample_buffer;
   std::deque<int> recent_decisions;
   double next_sample;
@@ -203,13 +202,6 @@ void GoertzelEncoder::Decode(const std::function<bool(double*)>& get_next_audio_
         last_byte |= (1 << last_byte_bit_count) * current_bit;
         ++last_byte_bit_count;
         ++current_bit_count;
-        if (max_total_bits > 0 && current_bit_count >= max_total_bits) {
-          LOG(INFO) << "Stopping decode after " << current_bit_count << " bits (limit)";
-          if (last_byte_bit_count > 0) {
-            set_next_byte(static_cast<char>(last_byte));
-          }
-          break;
-        }
         if (last_byte_bit_count == 8) {
           set_next_byte(static_cast<char>(last_byte));
           LOG(ERROR) << "submit " << static_cast<char>(last_byte);
