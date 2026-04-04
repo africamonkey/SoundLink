@@ -137,7 +137,8 @@ void GoertzelEncoder::Encode(const std::function<bool(char *)> &get_next_byte,
 }
 
 void GoertzelEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sample,
-                           const std::function<void(char)>& set_next_byte) const {
+                             const std::function<void(char)>& set_next_byte,
+                             int max_total_bits) const {
   std::deque<double> sample_buffer;
   std::deque<int> recent_decisions;
   double next_sample;
@@ -146,7 +147,6 @@ void GoertzelEncoder::Decode(const std::function<bool(double*)>& get_next_audio_
   int current_bit_count = 0;
   int samples_in_bit = 0;
   const int samples_per_bit = static_cast<int>(audio_sample_rate_ / encoder_rate_);
-  const int kMaxTotalBits = 2000;
   while (get_next_audio_sample(&next_sample)) {
     sample_buffer.push_back(next_sample);
     ++samples_in_bit;
@@ -203,8 +203,8 @@ void GoertzelEncoder::Decode(const std::function<bool(double*)>& get_next_audio_
         last_byte |= (1 << last_byte_bit_count) * current_bit;
         ++last_byte_bit_count;
         ++current_bit_count;
-        if (current_bit_count >= kMaxTotalBits) {
-          LOG(INFO) << "Stopping decode after " << current_bit_count << " bits";
+        if (max_total_bits > 0 && current_bit_count >= max_total_bits) {
+          LOG(INFO) << "Stopping decode after " << current_bit_count << " bits (limit)";
           if (last_byte_bit_count > 0) {
             set_next_byte(static_cast<char>(last_byte));
           }
@@ -231,7 +231,8 @@ void GoertzelEncoder::Decode(const std::function<bool(double*)>& get_next_audio_
   }
   LOG(INFO) << "Total bit count: " << current_bit_count;
   if (last_byte_bit_count > 0) {
-    LOG(WARNING) << "Incomplete byte at end, discarding " << last_byte_bit_count << " bits";
+    LOG(WARNING) << "Flushing incomplete byte at end: " << last_byte_bit_count << " bits";
+    set_next_byte(static_cast<char>(last_byte));
   }
 }
 
