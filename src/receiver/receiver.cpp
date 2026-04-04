@@ -10,7 +10,9 @@ namespace receiver {
 
 Receiver::Receiver(int audio_sample_rate, std::shared_ptr<encoder::EncoderBase> decoder)
     : decoder_(decoder),
-      capturer_(new audio::AudioCapturer(audio_sample_rate)) {}
+      capturer_(new audio::AudioCapturer(audio_sample_rate)),
+      stop_decode_(false),
+      buffer_has_data_(false) {}
 
 Receiver::~Receiver() { Close(); }
 
@@ -32,13 +34,23 @@ void Receiver::SetDataCallback(DataCallback callback) {
 
 bool Receiver::StartCapture() {
   auto audio_callback = [this](const float* samples, size_t num_samples) {
-    for (size_t i = 0; i < num_samples; ++i) {
-      sample_buffer_.push_back(static_cast<double>(samples[i]));
+    {
+      std::lock_guard<std::mutex> lock(buffer_mutex_);
+      for (size_t i = 0; i < num_samples; ++i) {
+        sample_buffer_.push_back(static_cast<double>(samples[i]));
+      }
+      buffer_has_data_ = true;
     }
+    buffer_cv_.notify_one();
     LOG_EVERY_N(INFO, 100) << "Captured " << num_samples << " samples, buffer size: " << sample_buffer_.size();
   };
 
   LOG(INFO) << "Starting audio capture...";
+
+  stop_decode_ = false;
+  buffer_has_data_ = false;
+  decode_thread_ = std::thread(&Receiver::DecodeLoop, this);
+
   capturer_->StartCapture(audio_callback);
   return true;
 }
@@ -46,48 +58,71 @@ bool Receiver::StartCapture() {
 void Receiver::StopCapture() {
   capturer_->StopCapture();
 
-  LOG(INFO) << "Capture stopped. Total samples captured: " << sample_buffer_.size();
+  LOG(INFO) << "Capture stopped.";
 
-  if (sample_buffer_.empty()) {
-    LOG(WARNING) << "No samples captured";
-    return;
+  {
+    std::lock_guard<std::mutex> lock(buffer_mutex_);
+    stop_decode_ = true;
   }
+  buffer_cv_.notify_one();
+
+  if (decode_thread_.joinable()) {
+    decode_thread_.join();
+  }
+
+  LOG(INFO) << "Total samples captured: " << sample_buffer_.size();
 
   double min_sample = *std::min_element(sample_buffer_.begin(), sample_buffer_.end());
   double max_sample = *std::max_element(sample_buffer_.begin(), sample_buffer_.end());
   LOG(INFO) << "Sample range: [" << min_sample << ", " << max_sample << "]";
+}
 
-  std::vector<char> decoded_bytes;
+void Receiver::DecodeLoop() {
+  std::vector<double> local_buffer;
   size_t sample_index = 0;
 
-  auto get_next_audio_sample = [this, &sample_index](double* next_sample) -> bool {
-    if (sample_index >= sample_buffer_.size()) {
-      return false;
-    }
-    *next_sample = sample_buffer_[sample_index];
-    ++sample_index;
+  auto get_sample = [&local_buffer, &sample_index](double* next_sample) -> bool {
+    if (sample_index >= local_buffer.size()) return false;
+    *next_sample = local_buffer[sample_index++];
     return true;
   };
 
-  auto set_next_byte = [&decoded_bytes](char byte) {
-    decoded_bytes.push_back(byte);
+  auto set_next_byte = [this](char byte) {
+    if (message_callback_) {
+      message_callback_(std::string(1, byte));
+    }
   };
 
-  decoder_->Decode(get_next_audio_sample, set_next_byte);
+  while (!stop_decode_) {
+    {
+      std::unique_lock<std::mutex> lock(buffer_mutex_);
+      while (!stop_decode_ && !buffer_has_data_) {
+        buffer_cv_.wait(lock);
+      }
+      if (stop_decode_) break;
+      local_buffer.insert(local_buffer.end(), sample_buffer_.begin(), sample_buffer_.end());
+      sample_buffer_.clear();
+      buffer_has_data_ = false;
+    }
 
-  LOG(INFO) << "Decoded " << decoded_bytes.size() << " bytes";
-
-  if (data_callback_) {
-    data_callback_(decoded_bytes);
+    if (!local_buffer.empty()) {
+      sample_index = 0;
+      decoder_->Decode(get_sample, set_next_byte, 0);
+    }
   }
 
-  std::string message(decoded_bytes.begin(), decoded_bytes.end());
-  if (message_callback_) {
-    message_callback_(message);
-  }
+  LOG(INFO) << "Decode thread exiting";
 }
 
 void Receiver::Close() {
+  {
+    std::lock_guard<std::mutex> lock(buffer_mutex_);
+    stop_decode_ = true;
+  }
+  buffer_cv_.notify_one();
+  if (decode_thread_.joinable()) {
+    decode_thread_.join();
+  }
   if (capturer_) {
     capturer_->Close();
   }
