@@ -3,8 +3,6 @@
 #include "src/receiver/receiver.h"
 
 #include <algorithm>
-#include <chrono>
-#include <deque>
 
 #include "glog/logging.h"
 
@@ -44,11 +42,6 @@ bool Receiver::StartCapture() {
       buffer_has_data_ = true;
     }
     buffer_cv_.notify_one();
-    {
-      std::lock_guard<std::mutex> lock(samples_mutex_);
-      samples_count_.fetch_add(num_samples);
-      samples_cv_.notify_one();
-    }
     LOG_EVERY_N(INFO, 100) << "Captured " << num_samples << " samples, buffer size: " << sample_buffer_.size();
   };
 
@@ -77,10 +70,6 @@ void Receiver::StopCapture() {
     stop_decode_ = true;
   }
   buffer_cv_.notify_one();
-  {
-    std::lock_guard<std::mutex> lock(samples_mutex_);
-    samples_cv_.notify_one();
-  }
 
   if (decode_thread_.joinable()) {
     decode_thread_.join();
@@ -96,10 +85,7 @@ void Receiver::StopCapture() {
 void Receiver::DecodeLoop() {
   auto get_sample = [this](double* next_sample) -> bool {
     if (local_buffer_.empty()) {
-      std::unique_lock<std::mutex> lock(samples_mutex_);
-      samples_cv_.wait(lock, [this] { return samples_count_ > 0 || stop_decode_; });
-      if (stop_decode_) return false;
-      samples_count_--;
+      return false;
     }
     *next_sample = local_buffer_.front();
     local_buffer_.pop_front();
@@ -112,13 +98,13 @@ void Receiver::DecodeLoop() {
     }
   };
 
-  while (!stop_decode_ || !local_buffer_.empty()) {
+  while (true) {
     {
       std::unique_lock<std::mutex> lock(buffer_mutex_);
       while (!stop_decode_ && !buffer_has_data_) {
         buffer_cv_.wait(lock);
       }
-      if (stop_decode_) break;
+      if (stop_decode_ && local_buffer_.empty()) break;
       local_buffer_.insert(local_buffer_.end(), sample_buffer_.begin(), sample_buffer_.end());
       sample_buffer_.clear();
       buffer_has_data_ = false;

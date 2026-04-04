@@ -43,10 +43,7 @@ class Receiver {
   std::condition_variable buffer_cv_;
   bool stop_decode_ = false;
   bool buffer_has_data_ = false;
-  std::atomic<int> samples_count_{0};
   std::atomic<bool> decoding_in_progress_{false};
-  std::mutex samples_mutex_;
-  std::condition_variable samples_cv_;
   void DecodeLoop();
 };
 
