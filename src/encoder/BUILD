@@ -90,6 +90,7 @@ cc_test(
     name = "chirp_encoder_test",
     srcs = ["chirp_encoder_test.cpp"],
     data = [
+        "//params:encoder_params",
         "//params:wav_params",
     ],
     deps = [

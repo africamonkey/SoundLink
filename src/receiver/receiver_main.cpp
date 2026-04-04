@@ -9,7 +9,7 @@
 
 #include "src/common/file/io.h"
 #include "src/common/interface/proto/encoder_params.pb.h"
-#include "src/encoder/goertzel_encoder.h"
+#include "src/encoder/chirp_encoder.h"
 #include "src/receiver/receiver.h"
 
 DEFINE_string(encoder_params, "params/encoder_params.txt", "Path to encoder params file");
@@ -26,17 +26,8 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  if (encoder_params.has_goertzel_encoder_params()) {
-    const auto& p = encoder_params.goertzel_encoder_params();
-    LOG(INFO) << "Decoder using GoertzelEncoder params:";
-    LOG(INFO) << "  encoder_rate: " << p.encoder_rate();
-    LOG(INFO) << "  bit_0 freq: " << p.encode_frequency_for_bit_0();
-    LOG(INFO) << "  bit_1 freq: " << p.encode_frequency_for_bit_1();
-    LOG(INFO) << "  rest freq: " << p.encode_frequency_for_rest();
-  }
-
   constexpr int kAudioSampleRate = 44100;
-  auto decoder = std::make_shared<encoder::GoertzelEncoder>(kAudioSampleRate, encoder_params);
+  auto decoder = std::make_shared<encoder::ChirpEncoder>(kAudioSampleRate, encoder_params);
 
   receiver::Receiver receiver(kAudioSampleRate, decoder);
   if (!receiver.Initialize()) {

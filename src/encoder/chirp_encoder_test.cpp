@@ -16,18 +16,6 @@ namespace encoder {
 
 namespace {
 
-interface::EncoderParams CreateChirpEncoderParams(double detection_threshold = 0.3) {
-  interface::EncoderParams encoder_params;
-  auto* params = encoder_params.mutable_chirp_encoder_params();
-  params->set_chirp_duration_ms(15.0);
-  params->set_frequency_low(500.0);
-  params->set_frequency_high(2000.0);
-  params->set_sync_chirp_count(2);
-  params->set_detection_threshold(detection_threshold);
-  params->set_correlation_window_size(256);
-  return encoder_params;
-}
-
 void EncodeString(const std::string& str,
                  const interface::EncoderParams& encoder_params,
                  const std::string& temp_filename,
@@ -89,7 +77,8 @@ std::string RoundTripWithNoise(const std::string& str,
   io::ReadFromProtoInTextFormat("params/wav_params.txt", &wav_params);
   const int audio_sample_rate = wav_params.sample_rate();
 
-  interface::EncoderParams encoder_params = CreateChirpEncoderParams(0.25);
+  interface::EncoderParams encoder_params;
+  io::ReadFromProtoInTextFormat("params/encoder_params.txt", &encoder_params);
 
   const std::string temp_filename = io::GenerateTestFolder() + "/chirp_noisy_test.wav";
   const std::string noisy_filename = io::GenerateTestFolder() + "/chirp_noisy_test_noisy.wav";
@@ -109,13 +98,14 @@ std::string RoundTripWithNoise(const std::string& str,
 }  // namespace
 
 TEST(ChirpEncoderTest, EncodeAndDecodeRoundTrip) {
-  interface::EncoderParams encoder_params = CreateChirpEncoderParams();
+  interface::EncoderParams encoder_params;
+  io::ReadFromProtoInTextFormat("params/encoder_params.txt", &encoder_params);
 
   interface::WavParams wav_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat("params/wav_params.txt", &wav_params));
   const int audio_sample_rate = wav_params.sample_rate();
 
-  const std::string kStringToBeEncoded = "kQ";
+  const std::string kStringToBeEncoded = "Hello, world!";
 
   int encode_current_id = 0;
   std::function get_next_byte = [&kStringToBeEncoded, &encode_current_id](char *byte) -> bool {
@@ -162,7 +152,8 @@ TEST(ChirpEncoderTest, EncodeAndDecodeRoundTrip) {
 }
 
 TEST(ChirpEncoderTest, EncodeAndDecodeHexString) {
-  interface::EncoderParams encoder_params = CreateChirpEncoderParams();
+  interface::EncoderParams encoder_params;
+  io::ReadFromProtoInTextFormat("params/encoder_params.txt", &encoder_params);
 
   interface::WavParams wav_params;
   ASSERT_TRUE(io::ReadFromProtoInTextFormat("params/wav_params.txt", &wav_params));
@@ -295,7 +286,8 @@ TEST(ChirpEncoderTest, RoundTripWithSilenceBeforeAndAfter) {
   io::ReadFromProtoInTextFormat("params/wav_params.txt", &wav_params);
   const int audio_sample_rate = wav_params.sample_rate();
 
-  interface::EncoderParams encoder_params = CreateChirpEncoderParams(0.25);
+  interface::EncoderParams encoder_params;
+  io::ReadFromProtoInTextFormat("params/encoder_params.txt", &encoder_params);
 
   const std::vector<std::string> test_strings = {
     "Short",
@@ -351,7 +343,8 @@ TEST(ChirpEncoderTest, RoundTripWithVariableSilenceAndNoise10dB) {
   io::ReadFromProtoInTextFormat("params/wav_params.txt", &wav_params);
   const int audio_sample_rate = wav_params.sample_rate();
 
-  interface::EncoderParams encoder_params = CreateChirpEncoderParams(0.25);
+  interface::EncoderParams encoder_params;
+  io::ReadFromProtoInTextFormat("params/encoder_params.txt", &encoder_params);
 
   const std::vector<std::string> test_strings = {
     "TestA",
