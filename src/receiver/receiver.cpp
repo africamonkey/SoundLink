@@ -3,6 +3,7 @@
 #include "src/receiver/receiver.h"
 
 #include <algorithm>
+#include <deque>
 
 #include "glog/logging.h"
 
@@ -48,6 +49,7 @@ bool Receiver::StartCapture() {
   LOG(INFO) << "Starting audio capture...";
 
   stop_decode_ = false;
+  eos_ = false;
   buffer_has_data_ = false;
   decode_thread_ = std::thread(&Receiver::DecodeLoop, this);
 
@@ -62,6 +64,9 @@ void Receiver::StopCapture() {
 
   {
     std::lock_guard<std::mutex> lock(buffer_mutex_);
+    local_buffer_.insert(local_buffer_.end(), sample_buffer_.begin(), sample_buffer_.end());
+    sample_buffer_.clear();
+    eos_ = true;
     stop_decode_ = true;
   }
   buffer_cv_.notify_one();
@@ -78,12 +83,13 @@ void Receiver::StopCapture() {
 }
 
 void Receiver::DecodeLoop() {
-  std::vector<double> local_buffer;
-  size_t sample_index = 0;
-
-  auto get_sample = [&local_buffer, &sample_index](double* next_sample) -> bool {
-    if (sample_index >= local_buffer.size()) return false;
-    *next_sample = local_buffer[sample_index++];
+  auto get_sample = [this](double* next_sample) -> bool {
+    if (local_buffer_.empty()) {
+      if (eos_) return false;
+      return false;
+    }
+    *next_sample = local_buffer_.front();
+    local_buffer_.pop_front();
     return true;
   };
 
@@ -93,20 +99,19 @@ void Receiver::DecodeLoop() {
     }
   };
 
-  while (!stop_decode_) {
+  while (!stop_decode_ || !local_buffer_.empty()) {
     {
       std::unique_lock<std::mutex> lock(buffer_mutex_);
       while (!stop_decode_ && !buffer_has_data_) {
         buffer_cv_.wait(lock);
       }
       if (stop_decode_) break;
-      local_buffer.insert(local_buffer.end(), sample_buffer_.begin(), sample_buffer_.end());
+      local_buffer_.insert(local_buffer_.end(), sample_buffer_.begin(), sample_buffer_.end());
       sample_buffer_.clear();
       buffer_has_data_ = false;
     }
 
-    if (!local_buffer.empty()) {
-      sample_index = 0;
+    if (!local_buffer_.empty()) {
       decoder_->Decode(get_sample, set_next_byte);
     }
   }
