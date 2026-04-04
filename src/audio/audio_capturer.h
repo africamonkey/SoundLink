@@ -17,15 +17,18 @@ class AudioCapturer {
   using AudioCallback = std::function<void(const float* samples, size_t num_samples)>;
 
   AudioCapturer(int sample_rate = 44100, int channels = 1);
-  ~AudioCapturer();
+  virtual ~AudioCapturer();
 
-  bool Initialize();
-  bool StartCapture(AudioCallback callback);
-  void StopCapture();
-  void Close();
+  virtual bool Initialize();
+  virtual bool StartCapture(AudioCallback callback);
+  virtual void StopCapture();
+  virtual void Close();
 
   int sample_rate() const { return sample_rate_; }
   int channels() const { return channels_; }
+
+ protected:
+  void SetCallbackForTesting(AudioCallback callback) { impl_->callback = callback; }
 
  public:
   struct Impl {

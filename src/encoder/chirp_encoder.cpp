@@ -82,12 +82,6 @@ int ChirpEncoder::DetectChirpType(const std::vector<double>& samples) const {
   double corr_up = ComputeChirpCorrelation(samples, reference_up_chirp_);
   double corr_down = ComputeChirpCorrelation(samples, reference_down_chirp_);
 
-  static int debug_counter = 0;
-  if (debug_counter++ % 100 == 0) {
-    LOG(INFO) << "Correlation: up=" << corr_up << ", down=" << corr_down
-              << ", threshold=" << detection_threshold_;
-  }
-
   if (corr_up > corr_down && corr_up > detection_threshold_) {
     return 0;
   } else if (corr_down > corr_up && corr_down > detection_threshold_) {

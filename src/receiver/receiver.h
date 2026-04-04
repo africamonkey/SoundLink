@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <memory>
@@ -21,6 +22,8 @@ class Receiver {
   using DataCallback = std::function<void(const std::vector<char>&)>;
 
   Receiver(int audio_sample_rate, std::shared_ptr<encoder::EncoderBase> decoder);
+  Receiver(int audio_sample_rate, std::shared_ptr<encoder::EncoderBase> decoder,
+           std::unique_ptr<audio::AudioCapturer> capturer);
   ~Receiver();
 
   bool Initialize();
