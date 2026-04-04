@@ -139,7 +139,8 @@ void ChirpEncoder::Encode(const std::function<bool(char *)> &get_next_byte,
 }
 
 void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sample,
-                           const std::function<void(char)>& set_next_byte) const {
+                           const std::function<void(char)>& set_next_byte,
+                           int max_total_bits) const {
   std::deque<double> sample_buffer;
   double next_sample;
 
@@ -150,7 +151,6 @@ void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sam
   int last_byte = 0;
   int last_byte_bit_count = 0;
 
-  const int kMaxTotalBits = 2000;
   const int kSyncConsecutiveFailuresLimit = 5;
 
   enum class State {
@@ -219,8 +219,8 @@ void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sam
         LOG(INFO) << "Decoded bit " << bit << " (total: " << current_bit_count
                   << "), byte progress: " << last_byte_bit_count;
 
-        if (current_bit_count >= kMaxTotalBits) {
-          LOG(INFO) << "Stopping decode after " << current_bit_count << " bits";
+        if (max_total_bits > 0 && current_bit_count >= max_total_bits) {
+          LOG(INFO) << "Stopping decode after " << current_bit_count << " bits (limit)";
           if (last_byte_bit_count > 0) {
             set_next_byte(static_cast<char>(last_byte));
           }
@@ -244,7 +244,8 @@ void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sam
 
   LOG(INFO) << "Total bit count: " << current_bit_count;
   if (last_byte_bit_count > 0) {
-    LOG(WARNING) << "Incomplete byte at end, discarding " << last_byte_bit_count << " bits";
+    LOG(WARNING) << "Flushing incomplete byte at end: " << last_byte_bit_count << " bits";
+    set_next_byte(static_cast<char>(last_byte));
   }
 }
 
