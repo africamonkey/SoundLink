@@ -2,10 +2,11 @@ syntax = "proto2";
 
 package interface;
 
-// Next id: 3
+// Next id: 4
 message EncoderParams {
   optional SimpleEncoderParams simple_encoder_params = 1;
   optional GoertzelEncoderParams goertzel_encoder_params = 2;
+  optional ChirpEncoderParams chirp_encoder_params = 3;
 }
 
 // Next id: 9
@@ -28,4 +29,13 @@ message GoertzelEncoderParams {
   optional double frequency_tolerance = 7;
   optional double minimum_energy_ratio = 8;
   optional int32 voting_window_size = 9;
+}
+
+message ChirpEncoderParams {
+  optional double chirp_duration_ms = 1;
+  optional double frequency_low = 2;
+  optional double frequency_high = 3;
+  optional int32 sync_chirp_count = 4;
+  optional double detection_threshold = 5;
+  optional int32 correlation_window_size = 6;
 }

@@ -55,6 +55,16 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "chirp_encoder",
+    srcs = ["chirp_encoder.cpp"],
+    hdrs = ["chirp_encoder.h"],
+    deps = [
+        ":encoder_base",
+        "@glog//:glog",
+    ],
+)
+
 cc_test(
     name = "goertzel_encoder_test",
     srcs = ["goertzel_encoder_test.cpp"],
@@ -72,6 +82,24 @@ cc_test(
         "//src/common/testing:google_test_main",
         "//src/wav:wav_reader",
         "//src/wav:wav_writer",
+        "@glog//:glog",
+    ],
+)
+
+cc_test(
+    name = "chirp_encoder_test",
+    srcs = ["chirp_encoder_test.cpp"],
+    data = [
+        "//params:wav_params",
+    ],
+    deps = [
+        ":chirp_encoder",
+        "//src/common/file:io",
+        "//src/common/interface/proto:cc_wav_params_proto",
+        "//src/common/testing:google_test_main",
+        "//src/wav:wav_reader",
+        "//src/wav:wav_writer",
+        "//src/wav:wav_noise_producer",
         "@glog//:glog",
     ],
 )
