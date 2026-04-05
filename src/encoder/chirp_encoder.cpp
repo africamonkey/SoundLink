@@ -151,7 +151,6 @@ void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sam
 
   int sync_matched = 0;
   int consecutive_failures = 0;
-  int samples_until_next_chirp = 0;
   int current_bit_count = 0;
   int last_byte = 0;
   int last_byte_bit_count = 0;
@@ -166,28 +165,17 @@ void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sam
 
   while (GetBatchAudioSamples(get_next_audio_sample, &batch)) {
     for (double next_sample : batch) {
-      if (samples_until_next_chirp > 0) {
-        --samples_until_next_chirp;
-        sample_buffer.push_back(next_sample);
-        if ((int)sample_buffer.size() >= chirp_samples_) {
-          sample_buffer.pop_front();
-        }
+      sample_buffer.push_back(next_sample);
+      if ((int)sample_buffer.size() > chirp_samples_) {
+        sample_buffer.pop_front();
+      }
+      if ((int)sample_buffer.size() < chirp_samples_) {
         continue;
       }
-
-      sample_buffer.push_back(next_sample);
+      std::vector<double> window_samples(sample_buffer.begin(), sample_buffer.end());
+      int detected_type = DetectChirpType(window_samples);
 
       if (state == State::kWaitingForSync) {
-        if ((int)sample_buffer.size() > chirp_samples_) {
-          sample_buffer.pop_front();
-        }
-        if ((int)sample_buffer.size() < chirp_samples_) {
-          continue;
-        }
-
-        std::vector<double> window_samples(sample_buffer.begin(), sample_buffer.end());
-        int detected_type = DetectChirpType(window_samples);
-
         if (detected_type == 0) {
           LOG(INFO) << "Sync chirp " << sync_matched + 1 << " detected";
           ++sync_matched;
@@ -195,7 +183,6 @@ void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sam
           sample_buffer.clear();
           if (sync_matched >= sync_chirp_count_) {
             state = State::kInSync;
-            samples_until_next_chirp = 0;
             LOG(INFO) << "Sync complete, starting data decode";
           }
         } else {
@@ -209,34 +196,20 @@ void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sam
           }
         }
       } else if (state == State::kInSync) {
-        if ((int)sample_buffer.size() < chirp_samples_) {
-          continue;
-        }
-
-        std::vector<double> window_samples(sample_buffer.begin(), sample_buffer.end());
-        int detected_type = DetectChirpType(window_samples);
-
         if (detected_type >= 0) {
           int bit = detected_type;
-
           last_byte |= (bit << last_byte_bit_count);
           ++last_byte_bit_count;
           ++current_bit_count;
-
           LOG(INFO) << "Decoded bit " << bit << " (total: " << current_bit_count
                     << "), byte progress: " << last_byte_bit_count;
-
           if (last_byte_bit_count == 8) {
             set_next_byte(static_cast<char>(last_byte));
             LOG(INFO) << "Output byte: " << static_cast<char>(last_byte);
             last_byte = 0;
             last_byte_bit_count = 0;
           }
-
           sample_buffer.clear();
-          samples_until_next_chirp = chirp_samples_ - 1;
-        } else {
-          sample_buffer.pop_front();
         }
       }
     }
