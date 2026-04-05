@@ -4,7 +4,6 @@
 
 #include <cmath>
 #include <complex>
-#include <iostream>
 #include <vector>
 
 #include "glog/logging.h"
@@ -94,7 +93,6 @@ std::vector<double> ComputeConvolution(const std::vector<double>& a, const std::
   std::vector<std::complex<double>> a_dft, b_dft;
   fft.Forward(a, &a_dft);
   fft.Forward(b, &b_dft);
-  std::cout << "\n";
   for (int i = 0; i < std::min(a_dft.size(), b_dft.size()); ++i) {
     a_dft[i] *= b_dft[i];
   }
