@@ -36,7 +36,6 @@ ChirpEncoder::ChirpEncoder(int audio_sample_rate, interface::EncoderParams encod
   frequency_high_ = params.frequency_high() > 0 ? params.frequency_high() : 2000.0;
   sync_chirp_count_ = params.sync_chirp_count() > 0 ? params.sync_chirp_count() : 2;
   detection_threshold_ = params.detection_threshold() > 0 ? params.detection_threshold() : 0.4;
-  correlation_window_size_ = params.correlation_window_size() > 0 ? params.correlation_window_size() : 256;
 
   chirp_samples_ = static_cast<int>(audio_sample_rate_ * chirp_duration_ms_ / 1000.0);
 
