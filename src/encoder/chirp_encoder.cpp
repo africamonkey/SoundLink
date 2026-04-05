@@ -189,6 +189,7 @@ void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sam
           }
         } else if (state == State::kInSync) {
           if (detected_type >= 0) {
+            consecutive_failures = 0;
             int bit = detected_type;
             last_byte |= (bit << last_byte_bit_count);
             ++last_byte_bit_count;
@@ -202,6 +203,15 @@ void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sam
               last_byte_bit_count = 0;
             }
             should_clean_buffer_to_idx = i;
+          } else {
+            ++consecutive_failures;
+            if (consecutive_failures >= kSyncConsecutiveFailuresLimit) {
+              LOG(WARNING) << "No chirp detected for " << consecutive_failures
+                           << " consecutive batches, returning to waiting for sync";
+              state = State::kWaitingForSync;
+              sync_matched = 0;
+              consecutive_failures = 0;
+            }
           }
         }
         if (should_clean_buffer_to_idx != -1) {
