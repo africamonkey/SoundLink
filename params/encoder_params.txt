@@ -22,5 +22,4 @@ chirp_encoder_params: {
   frequency_high: 2000.0
   sync_chirp_count: 2
   detection_threshold: 0.3
-  correlation_window_size: 256
 }

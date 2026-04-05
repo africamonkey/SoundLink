@@ -39,7 +39,6 @@ class ChirpEncoder final : public EncoderBase {
   double frequency_high_;
   int sync_chirp_count_;
   double detection_threshold_;
-  int correlation_window_size_;
   int chirp_samples_;
   int audio_sample_rate_;
 

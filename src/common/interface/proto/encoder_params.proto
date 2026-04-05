@@ -37,5 +37,4 @@ message ChirpEncoderParams {
   optional double frequency_high = 3;
   optional int32 sync_chirp_count = 4;
   optional double detection_threshold = 5;
-  optional int32 correlation_window_size = 6;
 }
