@@ -3,21 +3,14 @@
 #include "src/common/math/fft.h"
 
 #include <cmath>
+#include <random>
 #include <vector>
 
 #include "gtest/gtest.h"
 
+#include "src/common/math/math_utils.h"
+
 namespace math {
-
-namespace {
-
-constexpr double kEpsilon = 1e-6;
-
-bool ComplexNear(const std::complex<double>& a, const std::complex<double>& b, double epsilon) {
-  return std::abs(a.real() - b.real()) < epsilon && std::abs(a.imag() - b.imag()) < epsilon;
-}
-
-}  // namespace
 
 TEST(FFTTest, IsPowerOf2) {
   EXPECT_TRUE(IsPowerOf2(1));
@@ -44,89 +37,50 @@ TEST(FFTTest, NextPowerOf2) {
   EXPECT_EQ(NextPowerOf2(9), 16);
 }
 
-TEST(FFTTest, DCComponent) {
-  std::vector<double> input(8, 1.0);
-  std::vector<std::complex<double>> output;
-  ComputeFFT(input, &output);
-
-  EXPECT_TRUE(ComplexNear(output[0], std::complex<double>(8.0, 0.0), kEpsilon));
-  for (size_t i = 1; i < output.size(); ++i) {
-    EXPECT_TRUE(ComplexNear(output[i], std::complex<double>(0.0, 0.0), kEpsilon))
-        << "Index " << i << " has magnitude " << std::abs(output[i]);
+TEST(FFTTest, ComputeConvolution) {
+  std::vector<double> a = {1.0, 2.0, 3.0};
+  std::vector<double> b = {2.0, 1.0};
+  std::vector<double> c = ComputeConvolution(a, b);
+  std::vector<double> c_ans = {2.0, 5.0, 8.0, 3.0};
+  ASSERT_EQ(c.size(), c_ans.size());
+  for (int i = 0; i < c_ans.size(); ++i) {
+    EXPECT_NEAR(c[i], c_ans[i], kEpsilon);
   }
 }
 
-TEST(FFTTest, SingleFrequency) {
-  const int size = 8;
-  const double frequency = 1.0;
-  std::vector<double> input(size);
-  for (int i = 0; i < size; ++i) {
-    input[i] = std::sin(2.0 * M_PI * frequency * i / size);
-  }
-
-  std::vector<std::complex<double>> output;
-  ComputeFFT(input, &output);
-
-  int peak_idx = 0;
-  double peak_mag = 0.0;
-  for (int i = 0; i < size; ++i) {
-    double mag = std::abs(output[i]);
-    if (mag > peak_mag) {
-      peak_mag = mag;
-      peak_idx = i;
+TEST(FFTTest, ComputeConvolutionHard) {
+  constexpr int kNumOfTestCases = 100;
+  std::mt19937 gen(0);
+  std::uniform_int_distribution<int> int_dist(1, 10);
+  std::uniform_real_distribution<double> double_dist(-100.0, 100.0);
+  for (int test_case = 0; test_case < kNumOfTestCases; ++test_case) {
+    std::vector<double> a, b;
+    a.resize(int_dist(gen));
+    b.resize(int_dist(gen));
+    for (int i = 0; i < a.size(); ++i) {
+      a[i] = double_dist(gen);
     }
-  }
-  EXPECT_EQ(peak_idx, 1);
-}
-
-TEST(FFTTest, RoundTrip) {
-  std::vector<double> original = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
-
-  std::vector<std::complex<double>> freq_domain;
-  ComputeFFT(original, &freq_domain);
-
-  std::vector<double> recovered;
-  ComputeInverseFFT(freq_domain, &recovered);
-
-  ASSERT_EQ(recovered.size(), original.size());
-  for (size_t i = 0; i < original.size(); ++i) {
-    EXPECT_NEAR(recovered[i], original[i], kEpsilon);
-  }
-}
-
-TEST(FFTTest, RoundTripWithPadding) {
-  std::vector<double> original = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
-
-  std::vector<std::complex<double>> freq_domain;
-  ComputeFFT(original, &freq_domain);
-
-  std::vector<double> recovered;
-  ComputeInverseFFT(freq_domain, &recovered);
-
-  ASSERT_EQ(recovered.size(), original.size());
-  for (size_t i = 0; i < original.size(); ++i) {
-    EXPECT_NEAR(recovered[i], original[i], kEpsilon);
-  }
-}
-
-TEST(FFTTest, ClassBasedForwardInverse) {
-  const int size = 16;
-  FFT fft(size);
-
-  std::vector<double> input(size);
-  for (int i = 0; i < size; ++i) {
-    input[i] = std::sin(2.0 * M_PI * 2.0 * i / size);
-  }
-
-  std::vector<std::complex<double>> freq;
-  fft.Forward(input, &freq);
-
-  std::vector<double> recovered;
-  fft.Inverse(freq, &recovered);
-
-  ASSERT_EQ(recovered.size(), (size_t)size);
-  for (int i = 0; i < size; ++i) {
-    EXPECT_NEAR(recovered[i], input[i], kEpsilon);
+    for (int i = 0; i < b.size(); ++i) {
+      b[i] = double_dist(gen);
+    }
+    std::vector<double> c_ans;
+    c_ans.resize(a.size() + b.size() - 1);
+    std::fill(c_ans.begin(), c_ans.end(), 0.0);
+    for (int i = 0; i < a.size(); ++i) {
+      for (int j = 0; j < b.size(); ++j) {
+        ASSERT_GE(i + j, 0);
+        ASSERT_LT(i + j, c_ans.size());
+        c_ans[i + j] += a[i] * b[j];
+      }
+    }
+    std::vector<double> c = ComputeConvolution(a, b);
+    ASSERT_EQ(c.size(), c_ans.size());
+    for (int i = 0; i < c_ans.size(); ++i) {
+      if (std::abs(c[i] - c_ans[i]) > kEpsilon) {
+        ASSERT_EQ(0, 1) << a.size() << " " << b.size();
+      }
+      EXPECT_NEAR(c[i], c_ans[i], kEpsilon);
+    }
   }
 }
 

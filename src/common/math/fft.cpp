@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <complex>
+#include <iostream>
 #include <vector>
 
 #include "glog/logging.h"
@@ -25,129 +26,82 @@ int NextPowerOf2(int n) {
 }
 
 FFT::FFT(int size) : size_(size) {
-  CHECK(IsPowerOf2(size)) << "FFT size must be power of 2, got " << size;
+  CHECK(IsPowerOf2(size_)) << "FFT size must be power of 2, got " << size_;
   log2_size_ = 0;
-  int temp = size;
+  int temp = size_;
   while (temp > 1) {
     temp >>= 1;
     ++log2_size_;
   }
 
-  twiddle_factors_.resize(size_);
+  rev_.resize(size_);
+  std::fill(rev_.begin(), rev_.end(), 0);
   for (int i = 0; i < size_; ++i) {
-    double angle = -2.0 * M_PI * i / size_;
-    twiddle_factors_[i] = std::complex<double>(std::cos(angle), std::sin(angle));
+    rev_[i] = (rev_[i >> 1] >> 1) | ((i & 1) << (log2_size_ - 1));
   }
 }
 
 FFT::~FFT() {}
 
-void FFT::Forward(const std::vector<double>& input, std::vector<std::complex<double>>* output) {
-  CHECK_EQ((int)input.size(), size_);
+void FFT::Forward(const std::vector<double>& input, std::vector<std::complex<double>>* output) const {
+  CHECK_LE((int)input.size(), size_);
   output->resize(size_);
-  for (int i = 0; i < size_; ++i) {
+  std::fill(output->begin(), output->end(), std::complex<double>(0.0, 0.0));
+  for (int i = 0; i < input.size(); ++i) {
     (*output)[i] = std::complex<double>(input[i], 0.0);
   }
-  ForwardInPlace(output);
+  DFT(output, 1);
 }
 
-void FFT::Inverse(const std::vector<std::complex<double>>& input, std::vector<double>* output) {
+void FFT::Inverse(const std::vector<std::complex<double>>& input, std::vector<double>* output) const {
   CHECK_EQ((int)input.size(), size_);
   std::vector<std::complex<double>> temp = input;
-  InverseInPlace(&temp);
+  DFT(&temp, -1);
   output->resize(size_);
   for (int i = 0; i < size_; ++i) {
-    (*output)[i] = temp[i].real() / size_;
+    (*output)[i] = temp[i].real();
   }
 }
 
-void FFT::ForwardInPlace(std::vector<std::complex<double>>* data) {
-  CHECK_EQ((int)data->size(), size_);
-
+void FFT::DFT(std::vector<std::complex<double>>* data, int v) const {
   for (int i = 0; i < size_; ++i) {
-    int j = 0;
-    for (int k = 0; k < log2_size_; ++k) {
-      j = (j << 1) | ((i >> k) & 1);
-    }
-    if (j > i) {
-      std::swap((*data)[i], (*data)[j]);
+    if (i < rev_[i]) {
+      std::swap(data->at(i), data->at(rev_[i]));
     }
   }
-
-  for (int len = 2; len <= size_; len <<= 1) {
-    int half_len = len >> 1;
-    for (int i = 0; i < size_; i += len) {
-      for (int j = 0; j < half_len; ++j) {
-        int idx = i + j;
-        int twiddle_idx = (size_ / len) * j;
-        std::complex<double> u = (*data)[idx];
-        std::complex<double> t = twiddle_factors_[twiddle_idx] * (*data)[idx + half_len];
-        (*data)[idx] = u + t;
-        (*data)[idx + half_len] = u - t;
+  for (int s = 2; s <= size_; s <<= 1) {
+    std::complex<double> g(std::cos(2 * M_PI / s) , v * std::sin(2 * M_PI / s));
+    for (int k = 0; k < size_; k += s) {
+      std::complex<double> w(1.0, 0.0);
+      for (int j = 0; j < s / 2; ++j) {
+        std::complex<double> &u = data->at(k + j + s / 2), &v = data->at(k + j);
+        std::complex<double> t = w * u;
+        u = v - t;
+        v = v + t;
+        w = w * g;
       }
     }
   }
-}
-
-void FFT::InverseInPlace(std::vector<std::complex<double>>* data) {
-  CHECK_EQ((int)data->size(), size_);
-
-  for (int i = 0; i < size_; ++i) {
-    int j = 0;
-    for (int k = 0; k < log2_size_; ++k) {
-      j = (j << 1) | ((i >> k) & 1);
+	if (v == -1) {
+		for (int i = 0; i < size_; ++i) {
+      data->at(i) /= size_;
     }
-    if (j > i) {
-      std::swap((*data)[i], (*data)[j]);
-    }
-  }
-
-  for (int len = 2; len <= size_; len <<= 1) {
-    int half_len = len >> 1;
-    for (int i = 0; i < size_; i += len) {
-      for (int j = 0; j < half_len; ++j) {
-        int idx = i + j;
-        int twiddle_idx = (size_ / len) * j;
-        std::complex<double> u = (*data)[idx];
-        std::complex<double> t = std::conj(twiddle_factors_[twiddle_idx]) * (*data)[idx + half_len];
-        (*data)[idx] = u + t;
-        (*data)[idx + half_len] = u - t;
-      }
-    }
-  }
+	}
 }
 
-void ComputeFFT(const std::vector<double>& input, std::vector<std::complex<double>>* output) {
-  int size = NextPowerOf2(input.size());
-  std::vector<double> padded_input(size, 0.0);
-  for (size_t i = 0; i < input.size(); ++i) {
-    padded_input[i] = input[i];
+std::vector<double> ComputeConvolution(const std::vector<double>& a, const std::vector<double>& b) {
+  FFT fft(NextPowerOf2(a.size() + b.size()));
+  std::vector<std::complex<double>> a_dft, b_dft;
+  fft.Forward(a, &a_dft);
+  fft.Forward(b, &b_dft);
+  std::cout << "\n";
+  for (int i = 0; i < std::min(a_dft.size(), b_dft.size()); ++i) {
+    a_dft[i] *= b_dft[i];
   }
-  FFT fft(size);
-  fft.Forward(padded_input, output);
-}
-
-void ComputeInverseFFT(const std::vector<std::complex<double>>& input, std::vector<double>* output) {
-  int size = NextPowerOf2(input.size());
-  std::vector<std::complex<double>> padded_input(size);
-  for (size_t i = 0; i < input.size(); ++i) {
-    padded_input[i] = input[i];
-  }
-  for (size_t i = input.size(); i < (size_t)size; ++i) {
-    padded_input[i] = std::complex<double>(0.0, 0.0);
-  }
-  FFT fft(size);
-  std::vector<std::complex<double>> complex_output;
-  complex_output = padded_input;
-  fft.InverseInPlace(&complex_output);
-  output->resize(input.size());
-  for (size_t i = 0; i < input.size(); ++i) {
-    (*output)[i] = complex_output[i].real() / size;
-  }
-}
-
-void ComputeFFTRealInput(const std::vector<double>& input, std::vector<std::complex<double>>* output) {
-  ComputeFFT(input, output);
+  std::vector<double> output;
+  fft.Inverse(a_dft, &output);
+  output.resize(std::max(static_cast<int>(a.size() + b.size()) - 1, 0));
+  return output;
 }
 
 }  // namespace math

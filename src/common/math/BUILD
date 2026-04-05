@@ -26,6 +26,7 @@ cc_test(
     srcs = ["fft_test.cpp"],
     deps = [
         ":fft",
+        ":math_utils",
         "//src/common/testing:google_test_main",
     ],
 )
