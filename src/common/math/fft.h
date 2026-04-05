@@ -25,6 +25,7 @@ class FFT {
 
 bool IsPowerOf2(int n);
 int NextPowerOf2(int n);
+// Convolution: output[i] = \sigma_{k=0}^{i} a[k] * b[i-k]
 std::vector<double> ComputeConvolution(const std::vector<double>& a, const std::vector<double>& b);
 
 }  // namespace math
