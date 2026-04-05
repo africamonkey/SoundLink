@@ -61,6 +61,8 @@ cc_library(
     hdrs = ["chirp_encoder.h"],
     deps = [
         ":encoder_base",
+        "//src/common/math:fft",
+        "//src/common/math:math_utils",
         "@glog//:glog",
     ],
 )

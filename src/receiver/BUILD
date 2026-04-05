@@ -18,7 +18,7 @@ cc_library(
 cc_binary(
     name = "receiver_main",
     srcs = ["receiver_main.cpp"],
-    data = ["//params:encoder_params.txt"],
+    data = ["//params:encoder_params"],
     deps = [
         ":receiver",
         "//src/common/file:io",

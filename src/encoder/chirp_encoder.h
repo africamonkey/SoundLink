@@ -31,11 +31,8 @@ class ChirpEncoder final : public EncoderBase {
 
   void GenerateReferenceChirps();
   std::vector<double> GenerateChirp(ChirpType type) const;
-  double ComputeChirpCorrelation(const std::vector<double>& signal,
-                                 const std::vector<double>& reference) const;
-  int DetectChirpType(const std::vector<double>& samples) const;
+  int DetectChirpType(double corr_up, double corr_down) const;
   bool DetectSyncHeader() const;
-  int DecodeBitFromChirp(const std::vector<double>& samples) const;
 
   double chirp_duration_ms_;
   double frequency_low_;
@@ -47,7 +44,11 @@ class ChirpEncoder final : public EncoderBase {
   int audio_sample_rate_;
 
   std::vector<double> reference_up_chirp_;
+  std::vector<double> reversed_reference_up_chirp_;
   std::vector<double> reference_down_chirp_;
+  std::vector<double> reversed_reference_down_chirp_;
+  double sum_sq_reference_up_chirp_ = 0.0;
+  double sum_sq_reference_down_chirp_ = 0.0;
 };
 
 }  // namespace encoder

@@ -8,6 +8,9 @@
 
 #include "glog/logging.h"
 
+#include "src/common/math/fft.h"
+#include "src/common/math/math_utils.h"
+
 namespace encoder {
 
 bool ChirpEncoder::GetBatchAudioSamples(const std::function<bool(double*)>& get_next_audio_sample,
@@ -48,7 +51,20 @@ ChirpEncoder::ChirpEncoder(int audio_sample_rate, interface::EncoderParams encod
 
 void ChirpEncoder::GenerateReferenceChirps() {
   reference_up_chirp_ = GenerateChirp(ChirpType::kUpChirp);
+  reversed_reference_up_chirp_ = reference_up_chirp_;
+  std::reverse(reversed_reference_up_chirp_.begin(), reversed_reference_up_chirp_.end());
+  sum_sq_reference_up_chirp_ = 0.0;
+  for (int i = 0; i < reference_up_chirp_.size(); ++i) {
+    sum_sq_reference_up_chirp_ += math::Sqr(reference_up_chirp_[i]);
+  }
+
   reference_down_chirp_ = GenerateChirp(ChirpType::kDownChirp);
+  reversed_reference_down_chirp_ = reference_down_chirp_;
+  std::reverse(reversed_reference_down_chirp_.begin(), reversed_reference_down_chirp_.end());
+  sum_sq_reference_down_chirp_ = 0.0;
+  for (int i = 0; i < reference_down_chirp_.size(); ++i) {
+    sum_sq_reference_down_chirp_ += math::Sqr(reference_down_chirp_[i]);
+  }
 }
 
 std::vector<double> ChirpEncoder::GenerateChirp(ChirpType type) const {
@@ -70,30 +86,7 @@ std::vector<double> ChirpEncoder::GenerateChirp(ChirpType type) const {
   return chirp;
 }
 
-double ChirpEncoder::ComputeChirpCorrelation(const std::vector<double>& signal,
-                                             const std::vector<double>& reference) const {
-  if (signal.size() != reference.size()) {
-    return -1.0;
-  }
-  double sum_product = 0.0;
-  double sum_sq_signal = 0.0;
-  double sum_sq_reference = 0.0;
-  for (size_t i = 0; i < signal.size(); ++i) {
-    sum_product += signal[i] * reference[i];
-    sum_sq_signal += signal[i] * signal[i];
-    sum_sq_reference += reference[i] * reference[i];
-  }
-  double denom = std::sqrt(sum_sq_signal * sum_sq_reference);
-  if (denom < 1e-10) {
-    return 0.0;
-  }
-  return sum_product / denom;
-}
-
-int ChirpEncoder::DetectChirpType(const std::vector<double>& samples) const {
-  double corr_up = ComputeChirpCorrelation(samples, reference_up_chirp_);
-  double corr_down = ComputeChirpCorrelation(samples, reference_down_chirp_);
-
+int ChirpEncoder::DetectChirpType(double corr_up, double corr_down) const {
   if (corr_up > corr_down && corr_up > detection_threshold_) {
     return 0;
   } else if (corr_down > corr_up && corr_down > detection_threshold_) {
@@ -104,14 +97,6 @@ int ChirpEncoder::DetectChirpType(const std::vector<double>& samples) const {
 
 bool ChirpEncoder::DetectSyncHeader() const {
   return true;
-}
-
-int ChirpEncoder::DecodeBitFromChirp(const std::vector<double>& samples) const {
-  int type = DetectChirpType(samples);
-  if (type < 0) {
-    return -1;
-  }
-  return type;
 }
 
 void ChirpEncoder::Encode(const std::function<bool(char *)> &get_next_byte,
@@ -146,7 +131,7 @@ void ChirpEncoder::Encode(const std::function<bool(char *)> &get_next_byte,
 
 void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sample,
                            const std::function<void(char)>& set_next_byte) const {
-  std::deque<double> sample_buffer;
+  std::vector<double> sample_buffer;
   std::vector<double> batch;
 
   int sync_matched = 0;
@@ -164,53 +149,71 @@ void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sam
   State state = State::kWaitingForSync;
 
   while (GetBatchAudioSamples(get_next_audio_sample, &batch)) {
-    for (double next_sample : batch) {
-      sample_buffer.push_back(next_sample);
-      if ((int)sample_buffer.size() > chirp_samples_) {
-        sample_buffer.pop_front();
+    sample_buffer.insert(sample_buffer.end(), batch.begin(), batch.end());
+    while (sample_buffer.size() >= chirp_samples_) {
+      std::vector<double> conv_up = math::ComputeConvolution(sample_buffer, reversed_reference_up_chirp_);
+      std::vector<double> conv_down = math::ComputeConvolution(sample_buffer, reversed_reference_down_chirp_);
+      double sum_sq_sample_buffer = 0.0;
+      for (int i = 0; i + 1 < chirp_samples_; ++i) {
+        sum_sq_sample_buffer += math::Sqr(sample_buffer[i]);
       }
-      if ((int)sample_buffer.size() < chirp_samples_) {
-        continue;
-      }
-      std::vector<double> window_samples(sample_buffer.begin(), sample_buffer.end());
-      int detected_type = DetectChirpType(window_samples);
+      int should_clean_buffer_to_idx = -1;
+      for (int i = chirp_samples_ - 1; i < sample_buffer.size(); ++i) {
+        sum_sq_sample_buffer += math::Sqr(sample_buffer[i]);
 
-      if (state == State::kWaitingForSync) {
-        if (detected_type == 0) {
-          LOG(INFO) << "Sync chirp " << sync_matched + 1 << " detected";
-          ++sync_matched;
-          consecutive_failures = 0;
-          sample_buffer.clear();
-          if (sync_matched >= sync_chirp_count_) {
-            state = State::kInSync;
-            LOG(INFO) << "Sync complete, starting data decode";
-          }
-        } else {
-          if (sync_matched > 0) {
-            ++consecutive_failures;
-            if (consecutive_failures >= kSyncConsecutiveFailuresLimit) {
-              LOG(WARNING) << "Sync lost after " << consecutive_failures << " failures, resetting";
-              sync_matched = 0;
-              consecutive_failures = 0;
+        double denom_up = std::sqrt(sum_sq_sample_buffer * sum_sq_reference_up_chirp_);
+        double denom_down = std::sqrt(sum_sq_sample_buffer * sum_sq_reference_down_chirp_);
+        double corr_up = denom_up < math::kEpsilon ? 0.0 : conv_up[i] / denom_up;
+        double corr_down = denom_down < math::kEpsilon ? 0.0 : conv_down[i] / denom_down;
+        int detected_type = DetectChirpType(corr_up, corr_down);
+
+        if (state == State::kWaitingForSync) {
+          if (detected_type == 0) {
+            LOG(INFO) << "Sync chirp " << sync_matched + 1 << " detected";
+            ++sync_matched;
+            consecutive_failures = 0;
+            should_clean_buffer_to_idx = i;
+            if (sync_matched >= sync_chirp_count_) {
+              state = State::kInSync;
+              LOG(INFO) << "Sync complete, starting data decode";
+            }
+          } else {
+            if (sync_matched > 0) {
+              ++consecutive_failures;
+              if (consecutive_failures >= kSyncConsecutiveFailuresLimit) {
+                LOG(WARNING) << "Sync lost after " << consecutive_failures << " failures, resetting";
+                sync_matched = 0;
+                consecutive_failures = 0;
+              }
             }
           }
-        }
-      } else if (state == State::kInSync) {
-        if (detected_type >= 0) {
-          int bit = detected_type;
-          last_byte |= (bit << last_byte_bit_count);
-          ++last_byte_bit_count;
-          ++current_bit_count;
-          LOG(INFO) << "Decoded bit " << bit << " (total: " << current_bit_count
-                    << "), byte progress: " << last_byte_bit_count;
-          if (last_byte_bit_count == 8) {
-            set_next_byte(static_cast<char>(last_byte));
-            LOG(INFO) << "Output byte: " << static_cast<char>(last_byte);
-            last_byte = 0;
-            last_byte_bit_count = 0;
+        } else if (state == State::kInSync) {
+          if (detected_type >= 0) {
+            int bit = detected_type;
+            last_byte |= (bit << last_byte_bit_count);
+            ++last_byte_bit_count;
+            ++current_bit_count;
+            LOG(INFO) << "Decoded bit " << bit << " (total: " << current_bit_count
+                      << "), byte progress: " << last_byte_bit_count;
+            if (last_byte_bit_count == 8) {
+              set_next_byte(static_cast<char>(last_byte));
+              LOG(INFO) << "Output byte: " << static_cast<char>(last_byte);
+              last_byte = 0;
+              last_byte_bit_count = 0;
+            }
+            should_clean_buffer_to_idx = i;
           }
-          sample_buffer.clear();
         }
+        if (should_clean_buffer_to_idx != -1) {
+          break;
+        }
+
+        sum_sq_sample_buffer -= math::Sqr(sample_buffer[i - chirp_samples_ + 1]);
+      }
+      if (should_clean_buffer_to_idx != -1) {
+        sample_buffer.erase(sample_buffer.begin(), sample_buffer.begin() + should_clean_buffer_to_idx);
+      } else {
+        sample_buffer.erase(sample_buffer.begin(), sample_buffer.end() - (chirp_samples_ - 1));
       }
     }
   }
