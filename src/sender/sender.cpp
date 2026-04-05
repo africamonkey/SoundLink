@@ -23,7 +23,7 @@ bool Sender::Initialize() {
 
 bool Sender::SendMessage(const std::string& message) {
   std::vector<char> data(message.begin(), message.end());
-  data.push_back('\0');
+  data.push_back('\n');
   return SendData(data);
 }
 
