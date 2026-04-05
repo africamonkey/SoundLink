@@ -10,6 +10,18 @@
 
 namespace encoder {
 
+bool ChirpEncoder::GetBatchAudioSamples(const std::function<bool(double*)>& get_next_audio_sample,
+                                       std::vector<double>* batch) const {
+  batch->resize(chirp_samples_);
+  for (int i = 0; i < chirp_samples_; ++i) {
+    if (!get_next_audio_sample(&(*batch)[i])) {
+      batch->resize(i);
+      return false;
+    }
+  }
+  return true;
+}
+
 ChirpEncoder::ChirpEncoder(int audio_sample_rate, interface::EncoderParams encoder_params)
     : EncoderBase(audio_sample_rate, std::move(encoder_params)),
       audio_sample_rate_(audio_sample_rate) {
@@ -135,7 +147,7 @@ void ChirpEncoder::Encode(const std::function<bool(char *)> &get_next_byte,
 void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sample,
                            const std::function<void(char)>& set_next_byte) const {
   std::deque<double> sample_buffer;
-  double next_sample;
+  std::vector<double> batch;
 
   int sync_matched = 0;
   int consecutive_failures = 0;
@@ -152,77 +164,80 @@ void ChirpEncoder::Decode(const std::function<bool(double*)>& get_next_audio_sam
   };
   State state = State::kWaitingForSync;
 
-  while (get_next_audio_sample(&next_sample)) {
-    sample_buffer.push_back(next_sample);
-
-    if (state == State::kWaitingForSync) {
-      if ((int)sample_buffer.size() > chirp_samples_) {
-        sample_buffer.pop_front();
-      }
-      if ((int)sample_buffer.size() < chirp_samples_) {
-        continue;
-      }
-
-      std::vector<double> window_samples(sample_buffer.begin(), sample_buffer.end());
-      int detected_type = DetectChirpType(window_samples);
-
-      if (detected_type == 0) {
-        LOG(INFO) << "Sync chirp " << sync_matched + 1 << " detected";
-        ++sync_matched;
-        consecutive_failures = 0;
-        sample_buffer.clear();
-        if (sync_matched >= sync_chirp_count_) {
-          state = State::kInSync;
-          samples_until_next_chirp = 0;
-          LOG(INFO) << "Sync complete, starting data decode";
-        }
-      } else {
-        if (sync_matched > 0) {
-          ++consecutive_failures;
-          if (consecutive_failures >= kSyncConsecutiveFailuresLimit) {
-            LOG(WARNING) << "Sync lost after " << consecutive_failures << " failures, resetting";
-            sync_matched = 0;
-            consecutive_failures = 0;
-          }
-        }
-      }
-    } else if (state == State::kInSync) {
+  while (GetBatchAudioSamples(get_next_audio_sample, &batch)) {
+    for (double next_sample : batch) {
       if (samples_until_next_chirp > 0) {
         --samples_until_next_chirp;
+        sample_buffer.push_back(next_sample);
         if ((int)sample_buffer.size() >= chirp_samples_) {
           sample_buffer.pop_front();
         }
         continue;
       }
 
-      if ((int)sample_buffer.size() < chirp_samples_) {
-        continue;
-      }
+      sample_buffer.push_back(next_sample);
 
-      std::vector<double> window_samples(sample_buffer.begin(), sample_buffer.end());
-      int detected_type = DetectChirpType(window_samples);
-
-      if (detected_type >= 0) {
-        int bit = detected_type;
-
-        last_byte |= (bit << last_byte_bit_count);
-        ++last_byte_bit_count;
-        ++current_bit_count;
-
-        LOG(INFO) << "Decoded bit " << bit << " (total: " << current_bit_count
-                  << "), byte progress: " << last_byte_bit_count;
-
-        if (last_byte_bit_count == 8) {
-          set_next_byte(static_cast<char>(last_byte));
-          LOG(INFO) << "Output byte: " << static_cast<char>(last_byte);
-          last_byte = 0;
-          last_byte_bit_count = 0;
+      if (state == State::kWaitingForSync) {
+        if ((int)sample_buffer.size() > chirp_samples_) {
+          sample_buffer.pop_front();
+        }
+        if ((int)sample_buffer.size() < chirp_samples_) {
+          continue;
         }
 
-        sample_buffer.clear();
-        samples_until_next_chirp = chirp_samples_ - 1;
-      } else {
-        sample_buffer.pop_front();
+        std::vector<double> window_samples(sample_buffer.begin(), sample_buffer.end());
+        int detected_type = DetectChirpType(window_samples);
+
+        if (detected_type == 0) {
+          LOG(INFO) << "Sync chirp " << sync_matched + 1 << " detected";
+          ++sync_matched;
+          consecutive_failures = 0;
+          sample_buffer.clear();
+          if (sync_matched >= sync_chirp_count_) {
+            state = State::kInSync;
+            samples_until_next_chirp = 0;
+            LOG(INFO) << "Sync complete, starting data decode";
+          }
+        } else {
+          if (sync_matched > 0) {
+            ++consecutive_failures;
+            if (consecutive_failures >= kSyncConsecutiveFailuresLimit) {
+              LOG(WARNING) << "Sync lost after " << consecutive_failures << " failures, resetting";
+              sync_matched = 0;
+              consecutive_failures = 0;
+            }
+          }
+        }
+      } else if (state == State::kInSync) {
+        if ((int)sample_buffer.size() < chirp_samples_) {
+          continue;
+        }
+
+        std::vector<double> window_samples(sample_buffer.begin(), sample_buffer.end());
+        int detected_type = DetectChirpType(window_samples);
+
+        if (detected_type >= 0) {
+          int bit = detected_type;
+
+          last_byte |= (bit << last_byte_bit_count);
+          ++last_byte_bit_count;
+          ++current_bit_count;
+
+          LOG(INFO) << "Decoded bit " << bit << " (total: " << current_bit_count
+                    << "), byte progress: " << last_byte_bit_count;
+
+          if (last_byte_bit_count == 8) {
+            set_next_byte(static_cast<char>(last_byte));
+            LOG(INFO) << "Output byte: " << static_cast<char>(last_byte);
+            last_byte = 0;
+            last_byte_bit_count = 0;
+          }
+
+          sample_buffer.clear();
+          samples_until_next_chirp = chirp_samples_ - 1;
+        } else {
+          sample_buffer.pop_front();
+        }
       }
     }
   }

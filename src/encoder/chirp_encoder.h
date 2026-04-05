@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <complex>
+#include <functional>
 
 #include "src/encoder/encoder_base.h"
 
@@ -24,6 +25,9 @@ class ChirpEncoder final : public EncoderBase {
     kUpChirp,
     kDownChirp,
   };
+
+  bool GetBatchAudioSamples(const std::function<bool(double*)>& get_next_audio_sample,
+                            std::vector<double>* batch) const;
 
   void GenerateReferenceChirps();
   std::vector<double> GenerateChirp(ChirpType type) const;
