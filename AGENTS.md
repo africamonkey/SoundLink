@@ -1,6 +1,6 @@
-# AGENTS.md - ThruAudioXfer
+# AGENTS.md - SoundLink
 
-Guidelines for agentic coding agents working on the ThruAudioXfer (TAXf) project.
+Guidelines for agentic coding agents working on the SoundLink project.
 
 ## Permissions
 
@@ -18,7 +18,7 @@ Guidelines for agentic coding agents working on the ThruAudioXfer (TAXf) project
 
 ## Build System
 
-TAXf uses Bazel as its build system with C++17 standard.
+SoundLink uses Bazel as its build system with C++17 standard.
 
 ### Build Commands
 

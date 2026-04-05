@@ -10,7 +10,7 @@ tmp/
 MODULE.bazel.lock
 
 # bazel files
-/bazel-ThruAudioXfer
+/bazel-SoundLink
 /bazel-bin
 /bazel-out
 /bazel-testlogs
