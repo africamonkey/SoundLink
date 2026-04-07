@@ -6,6 +6,8 @@ SoundLink enables data transfer through audio signals. It encodes messages into 
 
 ## Demo
 
+https://github.com/user-attachments/assets/d52c3018-303b-4434-9419-160caecff715
+
 https://github.com/user-attachments/assets/e479d578-9a5a-4c79-8ab0-255910f1575a
 
 ## Architecture
