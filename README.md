@@ -22,10 +22,30 @@ Sender                          Receiver
 
 ### Dependencies
 
+**For Ubuntu**
+
 Make sure that all the required packages are installed (on Debian):
 ```bash
 sudo apt-get update
 sudo apt-get install -y portaudio19-dev
+```
+
+**For Mac**
+
+Install homebrew
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+Install portaudio
+
+```bash
+# Use Homebrew to install latest PortAudio (for ARM)
+arch -arm64 brew install portaudio
+
+# Validate PortAudio path
+brew --prefix portaudio  # Example: /opt/homebrew/opt/portaudio
 ```
 
 ### Sender
